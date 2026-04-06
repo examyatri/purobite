@@ -1,6 +1,6 @@
 const { createClient } = require('@supabase/supabase-js');
+const bcrypt = require('bcryptjs');
 
-// Ab bcrypt ki zaroorat nahi hai kyunki hum plain text use kar rahe hain
 const supabase = createClient(
   process.env.SUPABASE_URL,
   process.env.SUPABASE_ANON_KEY
@@ -61,6 +61,7 @@ module.exports = async (req, res) => {
       case 'updateStaff':          result = await updateStaff(data); break;
       case 'deleteStaff':          result = await deleteStaff(data); break;
       case 'getStaff':             result = await getStaff(); break;
+      case 'staffLogin':           result = await staffLogin(data); break;
       case 'getKhata':             result = await getKhata(data); break;
       case 'getSubscriberBalance': result = await getSubscriberBalance(data); break;
       case 'rechargeWallet':       result = await rechargeWallet(data); break;
@@ -106,19 +107,18 @@ function cleanPhone(p) {
 }
 
 // ═══════════════════════════════════════════
-// AUTH (UPDATED TO PLAIN TEXT)
+// AUTH
 // ═══════════════════════════════════════════
 async function signupUser(data) {
   if (!data.phone || !data.password || !data.name) throw new Error('Name, phone, password required');
   const ph = cleanPhone(data.phone);
   const { data: existing } = await supabase.from('users').select('phone').eq('phone', ph).maybeSingle();
   if (existing) throw new Error('Phone already registered');
-  
-  // Storing plain text password
+  const hashed = await bcrypt.hash(String(data.password), 10);
   const { data: user, error } = await supabase.from('users').insert({
     name: data.name, phone: ph,
     email: data.email || '', address: data.address || '',
-    password: String(data.password), role: 'customer'
+    password: hashed, role: 'customer'
   }).select().single();
   if (error) throw new Error(error.message);
   return { userId: user.user_id, name: user.name, phone: user.phone, email: user.email || '', address: user.address || '' };
@@ -129,9 +129,8 @@ async function loginUser(data) {
   const ph = cleanPhone(data.phone);
   const { data: user } = await supabase.from('users').select('*').eq('phone', ph).maybeSingle();
   if (!user) throw new Error('User not found');
-  
-  // Plain text match
-  if (String(data.password) !== String(user.password)) throw new Error('Incorrect password');
+  const match = await bcrypt.compare(String(data.password), user.password);
+  if (!match) throw new Error('Incorrect password');
   return { userId: user.user_id, name: user.name, phone: user.phone, email: user.email || '', address: user.address || '' };
 }
 
@@ -140,16 +139,16 @@ async function adminLogin(data) {
   const email = String(data.email).trim().toLowerCase();
   const { data: setting } = await supabase.from('admin_settings').select('*').eq('admin_id', email).maybeSingle();
   if (!setting) throw new Error('Admin not found');
-  
-  // Plain text match for Admin
-  if (String(data.password) !== String(setting.password_hash)) throw new Error('Incorrect password');
+  const match = await bcrypt.compare(String(data.password), setting.password_hash);
+  if (!match) throw new Error('Incorrect password');
   return { email, name: 'Admin', role: 'admin' };
 }
 
 async function resetAdminPassword(data) {
   if (!data.newPassword || String(data.newPassword).length < 6) throw new Error('Password must be 6+ characters');
+  const hashed = await bcrypt.hash(String(data.newPassword), 10);
   const { error } = await supabase.from('admin_settings')
-    .update({ password_hash: String(data.newPassword) })
+    .update({ password_hash: hashed })
     .eq('admin_id', 'admin@purobite.com');
   if (error) throw new Error(error.message);
   return { success: true, message: 'Password updated' };
@@ -161,7 +160,7 @@ async function updateProfile(data) {
   if (data.name !== undefined) updates.name = data.name;
   if (data.email !== undefined) updates.email = data.email;
   if (data.address !== undefined) updates.address = data.address;
-  if (data.newPassword) updates.password = String(data.newPassword);
+  if (data.newPassword) updates.password = await bcrypt.hash(String(data.newPassword), 10);
   const { error } = await supabase.from('users').update(updates).eq('user_id', data.userId);
   if (error) throw new Error(error.message);
   return true;
@@ -172,28 +171,15 @@ async function staffLogin(data) {
   const { data: s } = await supabase.from('staff')
     .select('*').eq('username', data.username).maybeSingle();
   if (!s) throw new Error('Invalid credentials');
-  
-  // Plain text match for Staff
-  if (String(data.password) !== String(s.password)) throw new Error('Invalid credentials');
+  const match = await bcrypt.compare(String(data.password), s.password);
+  if (!match) throw new Error('Invalid credentials');
   if (s.status !== 'active') throw new Error('Account is inactive');
   return { username: s.username, name: s.name, role: 'staff' };
 }
 
-async function riderLogin(data) {
-  if (!data.email || !data.password) throw new Error('Email and password required');
-  const { data: rider } = await supabase.from('riders').select('*').eq('email', data.email).maybeSingle();
-  if (!rider) throw new Error('Invalid credentials');
-  
-  // Plain text match for Rider
-  if (String(data.password) !== String(rider.password)) throw new Error('Invalid credentials');
-  return { riderId: rider.rider_id, name: rider.name, email: rider.email };
-}
-
 // ═══════════════════════════════════════════
-// Baki saare functions (Menu, Orders, Wallet, etc.) same rahenge...
-// Maine upar login/auth functions ko update kar diya hai.
+// MENU
 // ═══════════════════════════════════════════
-
 async function getMenu(data) {
   const ist = getIST();
   const h = ist.getUTCHours() + ist.getUTCMinutes() / 60;
@@ -274,6 +260,9 @@ async function updateMenuOrder(data) {
   return true;
 }
 
+// ═══════════════════════════════════════════
+// ORDERS
+// ═══════════════════════════════════════════
 async function createOrder(data) {
   if (!data.userId) throw new Error('userId required');
   const items = Array.isArray(data.items) ? data.items : JSON.parse(data.items || '[]');
@@ -296,12 +285,14 @@ async function createOrder(data) {
   }).select().single();
   if (error) throw new Error(error.message);
 
+  // Wallet deduction for subscribers
   if (data.userType === 'subscriber' && data.payFromWallet) {
     const ph = cleanPhone(data.phone);
     const amount = Number(data.finalAmount) || 0;
     await deductWalletBalance(ph, amount, `Order ${order.order_id}`, data.userId);
   }
 
+  // Coupon usage
   if (data.couponCode) await incrementCouponUsage(data.couponCode, cleanPhone(data.phone));
 
   return { orderId: order.order_id };
@@ -416,6 +407,9 @@ async function adminBulkCreate(data) {
   return { success, failed };
 }
 
+// ═══════════════════════════════════════════
+// COUPONS
+// ═══════════════════════════════════════════
 async function applyCoupon(data) {
   if (!data.code) throw new Error('Coupon code required');
   const { data: coupon } = await supabase.from('coupons')
@@ -472,6 +466,9 @@ async function deleteCoupon(data) {
   return true;
 }
 
+// ═══════════════════════════════════════════
+// SUBSCRIBERS
+// ═══════════════════════════════════════════
 async function checkSubscriber(data) {
   if (!data.phone) return { isSubscriber: false };
   const ph = cleanPhone(data.phone);
@@ -558,10 +555,14 @@ async function promoteToSubscriber(data) {
   return { promoted: true, phone: ph };
 }
 
+// ═══════════════════════════════════════════
+// RIDERS
+// ═══════════════════════════════════════════
 async function createRider(data) {
   if (!data.name || !data.email || !data.password) throw new Error('name, email, password required');
+  const hashed = await bcrypt.hash(String(data.password), 10);
   const { data: rider, error } = await supabase.from('riders').insert({
-    name: data.name, email: data.email, password: String(data.password)
+    name: data.name, email: data.email, password: hashed
   }).select().single();
   if (error) throw new Error(error.message);
   return { riderId: rider.rider_id };
@@ -572,7 +573,7 @@ async function updateRider(data) {
   const updates = {};
   if (data.name !== undefined) updates.name = data.name;
   if (data.email !== undefined) updates.email = data.email;
-  if (data.password && data.password.length >= 6) updates.password = String(data.password);
+  if (data.password && data.password.length >= 6) updates.password = await bcrypt.hash(String(data.password), 10);
   const { error } = await supabase.from('riders').update(updates).eq('rider_id', data.riderId);
   if (error) throw new Error(error.message);
   return true;
@@ -583,6 +584,15 @@ async function deleteRider(data) {
   const { error } = await supabase.from('riders').delete().eq('rider_id', data.riderId);
   if (error) throw new Error(error.message);
   return true;
+}
+
+async function riderLogin(data) {
+  if (!data.email || !data.password) throw new Error('Email and password required');
+  const { data: rider } = await supabase.from('riders').select('*').eq('email', data.email).maybeSingle();
+  if (!rider) throw new Error('Invalid credentials');
+  const match = await bcrypt.compare(String(data.password), rider.password);
+  if (!match) throw new Error('Invalid credentials');
+  return { riderId: rider.rider_id, name: rider.name, email: rider.email };
 }
 
 async function getRiderOrders(data) {
@@ -606,12 +616,16 @@ async function assignRider(data) {
   return true;
 }
 
+// ═══════════════════════════════════════════
+// STAFF
+// ═══════════════════════════════════════════
 async function createStaff(data) {
   if (!data.username || !data.name || !data.password) throw new Error('username, name, password required');
   if (data.password.length < 6) throw new Error('Password must be 6+ chars');
+  const hashed = await bcrypt.hash(String(data.password), 10);
   const { error } = await supabase.from('staff').insert({
     username: data.username, name: data.name,
-    password: String(data.password), status: data.status || 'active',
+    password: hashed, status: data.status || 'active',
     created_at: new Date().toISOString()
   });
   if (error) throw new Error(error.message);
@@ -623,7 +637,7 @@ async function updateStaff(data) {
   const updates = {};
   if (data.name !== undefined) updates.name = data.name;
   if (data.status !== undefined) updates.status = data.status;
-  if (data.password && data.password.length >= 6) updates.password = String(data.password);
+  if (data.password && data.password.length >= 6) updates.password = await bcrypt.hash(String(data.password), 10);
   const { error } = await supabase.from('staff').update(updates).eq('username', data.username);
   if (error) throw new Error(error.message);
   return true;
@@ -642,6 +656,9 @@ async function getStaff() {
   return (staff || []).map(s => ({ username: s.username, name: s.name, status: s.status, createdAt: s.created_at }));
 }
 
+// ═══════════════════════════════════════════
+// WALLET / KHATA
+// ═══════════════════════════════════════════
 async function getWalletBalance(phone) {
   const ph = cleanPhone(phone);
   const { data: w } = await supabase.from('wallet').select('balance').eq('user_phone', ph).maybeSingle();
@@ -742,6 +759,9 @@ async function adminGetAllKhata() {
   }));
 }
 
+// ═══════════════════════════════════════════
+// SETTINGS
+// ═══════════════════════════════════════════
 async function getSetting(key) {
   const { data } = await supabase.from('admin_settings').select('access_level').eq('admin_id', key).maybeSingle();
   return data?.access_level || null;
@@ -811,6 +831,9 @@ function getDefaultDay(d, name) {
   return { day: name || days[d], open: true, openTime: '07:00', lunchStart: '07:00', lunchEnd: '11:30', dinnerStart: '11:30', dinnerEnd: '19:30' };
 }
 
+// ═══════════════════════════════════════════
+// ANALYTICS
+// ═══════════════════════════════════════════
 async function getAnalytics() {
   const ist = getIST();
   const today = istDateStr(ist);
