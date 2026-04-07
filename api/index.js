@@ -9,6 +9,9 @@ const supabase = createClient(
 const SECURE_API_KEY = process.env.API_KEY || 'PB_SECURE_API_KEY_2026';
 
 module.exports = async (req, res) => {
+  if (typeof req.body === "string") {
+    try { req.body = JSON.parse(req.body); } catch {}
+  }
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
   res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
