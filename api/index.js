@@ -89,9 +89,9 @@ module.exports = async (req, res) => {
   }
 };
 
-// âââââââââââââââââââââââââââââââââââââââââââ
+//--------------------------------------------------------------------------------------------------------------------------------
 // HELPERS
-// âââââââââââââââââââââââââââââââââââââââââââ
+//--------------------------------------------------------------------------------------------------------------------------------
 function getIST() {
   return new Date(Date.now() + 5.5 * 3600000);
 }
@@ -110,9 +110,9 @@ function cleanPhone(p) {
   return String(p || '').replace(/\D/g, '');
 }
 
-// âââââââââââââââââââââââââââââââââââââââââââ
+//--------------------------------------------------------------------------------------------------------------------------------
 // AUTH
-// âââââââââââââââââââââââââââââââââââââââââââ
+//--------------------------------------------------------------------------------------------------------------------------------
 async function signupUser(data) {
   if (!data.phone || !data.password || !data.name) throw new Error('Name, phone, password required');
   const ph = cleanPhone(data.phone);
@@ -181,9 +181,9 @@ async function staffLogin(data) {
   return { username: s.username, name: s.name, role: 'staff' };
 }
 
-// âââââââââââââââââââââââââââââââââââââââââââ
+//--------------------------------------------------------------------------------------------------------------------------------
 // MENU
-// âââââââââââââââââââââââââââââââââââââââââââ
+//--------------------------------------------------------------------------------------------------------------------------------
 async function getMenu(data) {
   const ist = getIST();
   const h = ist.getUTCHours() + ist.getUTCMinutes() / 60;
@@ -264,9 +264,9 @@ async function updateMenuOrder(data) {
   return true;
 }
 
-// âââââââââââââââââââââââââââââââââââââââââââ
+//--------------------------------------------------------------------------------------------------------------------------------
 // ORDERS
-// âââââââââââââââââââââââââââââââââââââââââââ
+//--------------------------------------------------------------------------------------------------------------------------------
 async function createOrder(data) {
   if (!data.userId) throw new Error('userId required');
   const items = Array.isArray(data.items) ? data.items : JSON.parse(data.items || '[]');
@@ -314,25 +314,25 @@ async function adminGetOrders() {
   return (orders || []).map(formatOrder);
 }
 
-// ─────────────────────────────────────────────────────────────
+// -------------------------------------------------------------
 // DATE / TIME NORMALIZERS
 // Supabase returns order_date as DATE ("2026-04-07") and
 // order_time as TIME ("09:35:00") when column types are DATE/TIME.
 // Frontend always expects "DD/MM/YYYY" and "HH:MM AM/PM".
 // These functions handle both raw Supabase values AND already-
 // formatted strings (so existing data is never broken).
-// ─────────────────────────────────────────────────────────────
+// -------------------------------------------------------------
 function normOrderDate(v) {
   if (!v) return '';
   const s = String(v).trim();
-  // Already DD/MM/YYYY — return as-is
+  // Already DD/MM/YYYY - return as-is
   if (/^\d{2}\/\d{2}\/\d{4}$/.test(s)) return s;
   // YYYY-MM-DD (Supabase DATE type)
   if (/^\d{4}-\d{2}-\d{2}$/.test(s)) {
     const [yyyy, mm, dd] = s.split('-');
     return `${dd}/${mm}/${yyyy}`;
   }
-  // ISO datetime — apply IST offset
+  // ISO datetime - apply IST offset
   if (/^\d{4}-\d{2}-\d{2}T/.test(s)) {
     const ist = new Date(new Date(s).getTime() + 5.5 * 3600000);
     if (!isNaN(ist.getTime())) {
@@ -341,13 +341,13 @@ function normOrderDate(v) {
              ist.getUTCFullYear();
     }
   }
-  return s; // fallback — return as-is
+  return s; // fallback â return as-is
 }
 
 function normOrderTime(v) {
   if (!v) return '';
   const s = String(v).trim();
-  // Already HH:MM AM/PM — return as-is
+  // Already HH:MM AM/PM - return as-is
   if (/^\d{1,2}:\d{2}\s*(AM|PM)$/i.test(s)) return s;
   // HH:MM:SS (Supabase TIME type) or HH:MM
   const m = s.match(/^(\d{1,2}):(\d{2})(?::\d{2})?$/);
@@ -434,7 +434,7 @@ async function bulkOrdersWithBalance(data) {
     const amount = Number(o.finalAmount) || 0;
     try {
       const bal = await getWalletBalance(ph);
-      if (bal < amount) { failed.push({ phone: ph, name: o.name, reason: `Low balance â¹${bal}` }); continue; }
+      if (bal < amount) { failed.push({ phone: ph, name: o.name, reason: `Low balance Ã¢ÂÂ¹${bal}` }); continue; }
       const ist = getIST();
       const { data: order, error } = await supabase.from('orders').insert({
         user_id: o.userId || ph, name: o.name, phone: ph, address: o.address || '',
@@ -460,7 +460,7 @@ async function adminBulkCreate(data) {
       const amount = Number(o.finalAmount) || 0;
       if (o.deductWallet && amount > 0) {
         const bal = await getWalletBalance(ph);
-        if (bal < amount) { failed.push({ phone: ph, name: o.name, reason: `Low balance â¹${bal}` }); continue; }
+        if (bal < amount) { failed.push({ phone: ph, name: o.name, reason: `Low balance Ã¢ÂÂ¹${bal}` }); continue; }
       }
       const ist = getIST();
       const { data: order, error } = await supabase.from('orders').insert({
@@ -481,9 +481,9 @@ async function adminBulkCreate(data) {
   return { success, failed };
 }
 
-// âââââââââââââââââââââââââââââââââââââââââââ
+//--------------------------------------------------------------------------------------------------------------------------------
 // COUPONS
-// âââââââââââââââââââââââââââââââââââââââââââ
+//--------------------------------------------------------------------------------------------------------------------------------
 async function applyCoupon(data) {
   if (!data.code) throw new Error('Coupon code required');
   const { data: coupon } = await supabase.from('coupons')
@@ -540,9 +540,9 @@ async function deleteCoupon(data) {
   return true;
 }
 
-// âââââââââââââââââââââââââââââââââââââââââââ
+//--------------------------------------------------------------------------------------------------------------------------------
 // SUBSCRIBERS
-// âââââââââââââââââââââââââââââââââââââââââââ
+//--------------------------------------------------------------------------------------------------------------------------------
 async function checkSubscriber(data) {
   if (!data.phone) return { isSubscriber: false };
   const ph = cleanPhone(data.phone);
@@ -629,9 +629,9 @@ async function promoteToSubscriber(data) {
   return { promoted: true, phone: ph };
 }
 
-// âââââââââââââââââââââââââââââââââââââââââââ
+//--------------------------------------------------------------------------------------------------------------------------------
 // RIDERS
-// âââââââââââââââââââââââââââââââââââââââââââ
+//--------------------------------------------------------------------------------------------------------------------------------
 async function createRider(data) {
   if (!data.name || !data.email || !data.password) throw new Error('name, email, password required');
   const hashed = await bcrypt.hash(String(data.password), 10);
@@ -690,9 +690,9 @@ async function assignRider(data) {
   return true;
 }
 
-// âââââââââââââââââââââââââââââââââââââââââââ
+//--------------------------------------------------------------------------------------------------------------------------------
 // STAFF
-// âââââââââââââââââââââââââââââââââââââââââââ
+//--------------------------------------------------------------------------------------------------------------------------------
 async function createStaff(data) {
   if (!data.username || !data.name || !data.password) throw new Error('username, name, password required');
   if (data.password.length < 6) throw new Error('Password must be 6+ chars');
@@ -730,9 +730,9 @@ async function getStaff() {
   return (staff || []).map(s => ({ username: s.username, name: s.name, status: s.status, createdAt: s.created_at }));
 }
 
-// âââââââââââââââââââââââââââââââââââââââââââ
+//--------------------------------------------------------------------------------------------------------------------------------
 // WALLET / KHATA
-// âââââââââââââââââââââââââââââââââââââââââââ
+//--------------------------------------------------------------------------------------------------------------------------------
 async function getWalletBalance(phone) {
   const ph = cleanPhone(phone);
   const { data: w } = await supabase.from('wallet').select('balance').eq('user_phone', ph).maybeSingle();
@@ -833,9 +833,9 @@ async function adminGetAllKhata() {
   }));
 }
 
-// âââââââââââââââââââââââââââââââââââââââââââ
+//--------------------------------------------------------------------------------------------------------------------------------
 // SETTINGS
-// âââââââââââââââââââââââââââââââââââââââââââ
+//--------------------------------------------------------------------------------------------------------------------------------
 async function upsertSetting(key, value) {
   await supabase.from('admin_settings').upsert({ admin_id: key, access_level: String(value) }, { onConflict: 'admin_id' });
 }
@@ -900,9 +900,9 @@ function getDefaultDay(d, name) {
   return { day: name || days[d], open: true, openTime: '07:00', lunchStart: '07:00', lunchEnd: '11:30', dinnerStart: '11:30', dinnerEnd: '19:30' };
 }
 
-// ─────────────────────────────────────────────────────────────
-// DELETE OLD DATA (Admin only — free up Supabase storage)
-// ─────────────────────────────────────────────────────────────
+// -------------------------------------------------------------
+// DELETE OLD DATA (Admin only - free up Supabase storage)
+// -------------------------------------------------------------
 async function deleteOldData(data) {
   const months = Number(data.months) || 3;
   const cutoff = new Date(Date.now() + 5.5 * 3600000);
@@ -939,9 +939,9 @@ async function deleteOldData(data) {
   return { deletedOrders, deletedKhata, cutoffDate: cutoffStr };
 }
 
-// âââââââââââââââââââââââââââââââââââââââââââ
+//--------------------------------------------------------------------------------------------------------------------------------
 // ANALYTICS
-// âââââââââââââââââââââââââââââââââââââââââââ
+//--------------------------------------------------------------------------------------------------------------------------------
 async function getAnalytics() {
   const ist = getIST();
   const today = istDateStr(ist);
