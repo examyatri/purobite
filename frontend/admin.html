@@ -276,15 +276,23 @@ tr:hover td{background:#fafafa}
         <div class="fb">
           <button class="f-btn" onclick="filterOrd('all',this)">All</button>
           <button class="f-btn act" onclick="filterOrd('today',this)">Today</button>
+          <button class="f-btn" onclick="filterOrd('morning',this)">☀️ Morning</button>
+          <button class="f-btn" onclick="filterOrd('evening',this)">🌙 Evening</button>
           <button class="f-btn" onclick="filterOrd('pending',this)">Pending</button>
           <button class="f-btn" onclick="filterOrd('preparing',this)">Preparing</button>
           <button class="f-btn" onclick="filterOrd('out for delivery',this)">Out for Del.</button>
           <button class="f-btn" onclick="filterOrd('delivered',this)">Delivered</button>
           <button class="f-btn" style="color:#e63946" onclick="filterOrd('rejected',this)">Rejected</button>
-          <input class="s-inp" type="text" placeholder="Search name/phone/ID..." id="ord-srch" oninput="renderOrds()">
+        </div>
+        <div class="fb" style="margin-top:6px">
+          <input class="s-inp" type="text" placeholder="Search name/phone/ID..." id="ord-srch">
+          <button class="btn btn-p btn-sm" onclick="renderOrds()"><i class="fa-solid fa-magnifying-glass"></i> Search</button>
+          <button class="btn btn-ghost btn-sm" onclick="exportOrdsPDF()" title="Export PDF"><i class="fa-solid fa-file-pdf"></i> PDF</button>
+          <input class="s-inp" type="date" id="ord-date-filter" title="Filter by date" style="max-width:160px">
+          <button class="btn btn-ghost btn-sm" onclick="doc('ord-date-filter').value='';renderOrds()">✕ Date</button>
         </div>
         <div class="tc">
-          <div class="th"><h3>Orders</h3><button class="btn btn-ghost btn-sm" onclick="loadOrds()"><i class="fa-solid fa-rotate"></i></button></div>
+          <div class="th"><h3 id="ord-count-lbl">Orders</h3><button class="btn btn-ghost btn-sm" onclick="loadOrds()"><i class="fa-solid fa-rotate"></i></button></div>
           <div style="overflow-x:auto"><table><thead><tr><th>Order ID</th><th>Customer</th><th>Items</th><th>Amount</th><th>Type</th><th>Payment</th><th>Status</th><th>Date</th><th>Rider</th><th>Actions</th></tr></thead><tbody id="ord-tb"></tbody></table></div>
         </div>
       </div>
@@ -451,6 +459,28 @@ tr:hover td{background:#fafafa}
             <div id="khata-toggle-msg" style="margin-top:10px;font-size:13px;color:var(--gr)"></div>
           </div>
         </div>
+        <!-- Delete Old Data Card (Admin Only) -->
+        <div class="tc admin-only" style="max-width:520px;margin-bottom:20px;border:2px solid #fde8ea">
+          <div class="th"><h3>🗑️ Delete Old Data</h3><span style="font-size:12px;color:var(--p)">Free up Supabase storage</span></div>
+          <div style="padding:18px">
+            <div style="background:#fff8f8;border-radius:10px;padding:12px;margin-bottom:14px;font-size:13px;color:#c1121f;font-weight:600;border-left:4px solid var(--p)">
+              ⚠️ Ye action permanent hai aur undo nahi ho sakta! 3 mahine se purane saare orders, khata transactions delete ho jayenge.
+            </div>
+            <div class="fg">
+              <label class="lbl">Delete data older than</label>
+              <select id="del-months" class="inp" style="max-width:200px">
+                <option value="3">3 Months</option>
+                <option value="6">6 Months</option>
+                <option value="1">1 Month</option>
+              </select>
+            </div>
+            <div id="del-data-msg" style="font-size:13px;margin-top:8px;color:var(--gr)"></div>
+            <button class="btn btn-red" onclick="deleteOldData()" style="margin-top:8px">
+              <i class="fa-solid fa-trash"></i> Delete Old Data
+            </button>
+          </div>
+        </div>
+
         <div class="tc" style="max-width:520px">
           <div class="th"><h3>⏰ Legacy Cutoff (Fallback)</h3><span style="font-size:12px;color:var(--gr)">Used if day schedule not set</span></div>
           <div style="padding:20px">
@@ -739,7 +769,7 @@ tr:hover td{background:#fafafa}
 // CONFIG
 // ════════════════════════════════════════════════
   const CFG = {
-    'GAS': 'https://purobite-v1.vercel.app/api',
+    'GAS': 'https://purobite.vercel.app/api',
     'KEY': 'PB_SECURE_API_KEY_2026'
   };
 
@@ -907,6 +937,11 @@ function applyRoleUI(role){
   document.querySelectorAll('.admin-only').forEach(el=>{
     el.style.display=role==='staff'?'none':'';
   });
+  // Settings and Revenue hidden for staff/manager
+  const settingsNav=doc('ni-settings');
+  if(settingsNav) settingsNav.style.display=role==='staff'?'none':'';
+  // If staff somehow lands on settings page, redirect to orders
+  if(role==='staff' && _curPg==='settings') showPg('orders');
 }
 
 // ════════════════════════════════════════════════
@@ -1005,7 +1040,7 @@ async function loadOrds(){
 
 function filterOrd(f,btn){
   _ordF=f;
-  document.querySelectorAll('#pg-orders .f-btn').forEach(b=>b.classList.remove('act'));
+  document.querySelectorAll('#pg-orders .fb:first-child .f-btn').forEach(b=>b.classList.remove('act'));
   btn.classList.add('act'); renderOrds();
 }
 
@@ -1013,13 +1048,14 @@ function filterOrd(f,btn){
 function getOrdHour(o){
   const t=String(o.time||'').replace(/[\u00a0\u202f\u2009]/g,' ').trim();
   if(!t) return -1;
+  // HH:MM AM/PM format (from backend normOrderTime)
   const m=t.toLowerCase().match(/(\d{1,2}):(\d{2})\s*(am|pm)?/);
   if(!m) return -1;
   let h=parseInt(m[1]); const mn=parseInt(m[2]), p=m[3]||'';
   if(p==='pm'&&h!==12) h+=12; if(p==='am'&&h===12) h=0;
   return h+mn/60;
 }
-function isAdminDayOrder(o){ const h=getOrdHour(o); return h<0?false:h<12; }
+function isAdminDayOrder(o){ const h=getOrdHour(o); return h<0?false:h<11.5; }
 function ordNewest(a,b){
   const ta=Number(String(a.orderId).replace('PB-','').split('-')[0])||0;
   const tb=Number(String(b.orderId).replace('PB-','').split('-')[0])||0;
@@ -1028,6 +1064,7 @@ function ordNewest(a,b){
 
 function renderOrds(){
   const srch=(doc('ord-srch').value||'').toLowerCase();
+  const dateFilter=doc('ord-date-filter')?doc('ord-date-filter').value:'';
   const today=todayIST();
   const sc={pending:'b-y',preparing:'b-o','out for delivery':'b-bl',delivered:'b-g',paid:'b-g',rejected:'b-r'};
 
@@ -1036,11 +1073,30 @@ function renderOrds(){
     if(_ordF==='today')    return normDate(o.date)===today && o.orderStatus!=='rejected';
     if(_ordF==='rejected') return o.orderStatus==='rejected';
     if(_ordF==='all')      return o.orderStatus!=='rejected';
+    if(_ordF==='morning')  return isAdminDayOrder(o) && o.orderStatus!=='rejected';
+    if(_ordF==='evening')  return !isAdminDayOrder(o) && o.orderStatus!=='rejected';
     return o.orderStatus===_ordF;
-  }).filter(o=>!srch||(o.name||'').toLowerCase().includes(srch)||(o.phone||'').includes(srch)||(o.orderId||'').toLowerCase().includes(srch));
+  });
+
+  // Date filter (from date input)
+  if(dateFilter){
+    filtered=filtered.filter(o=>{
+      // dateFilter is YYYY-MM-DD, normDate returns DD/MM/YYYY — convert to compare
+      const [y,m,d]=dateFilter.split('-');
+      const target=`${d}/${m}/${y}`;
+      return normDate(o.date)===target;
+    });
+  }
+
+  // Search filter
+  filtered=filtered.filter(o=>!srch||(o.name||'').toLowerCase().includes(srch)||(o.phone||'').includes(srch)||(o.orderId||'').toLowerCase().includes(srch));
 
   // Always newest first
   filtered = [...filtered].sort(ordNewest);
+
+  // Update count label
+  const lbl=doc('ord-count-lbl');
+  if(lbl) lbl.textContent=`Orders (${filtered.length})`;
 
   // Build row HTML
   function buildRow(o){
@@ -1068,10 +1124,10 @@ function renderOrds(){
     </tr>`;
   }
 
-  // TODAY tab — split into Morning / Evening sub-groups
-  if(_ordF==='today' && !srch){
+  // TODAY and MORNING/EVENING tab — split into Morning / Evening sub-groups
+  if((_ordF==='today'||_ordF==='morning'||_ordF==='evening') && !srch && !dateFilter){
     if(!filtered.length){
-      doc('ord-tb').innerHTML='<tr><td colspan="10" style="text-align:center;padding:28px;color:#999">No orders today</td></tr>';
+      doc('ord-tb').innerHTML='<tr><td colspan="10" style="text-align:center;padding:28px;color:#999">No orders found</td></tr>';
       return;
     }
     const morning=[...filtered].filter(o=>isAdminDayOrder(o));
@@ -1094,6 +1150,86 @@ function renderOrds(){
   doc('ord-tb').innerHTML=filtered.length
     ? filtered.map(o=>buildRow(o)).join('')
     : '<tr><td colspan="10" style="text-align:center;padding:28px;color:#999">No orders found</td></tr>';
+}
+
+// ════════════════════════════════════════════════
+// ORDERS PDF EXPORT — only currently filtered orders
+// ════════════════════════════════════════════════
+function exportOrdsPDF(){
+  // Get the currently visible filtered list (same logic as renderOrds but return array)
+  const srch=(doc('ord-srch').value||'').toLowerCase();
+  const dateFilter=doc('ord-date-filter')?doc('ord-date-filter').value:'';
+  const today=todayIST();
+
+  let src=_ords.filter(o=>{
+    if(_ordF==='today')    return normDate(o.date)===today && o.orderStatus!=='rejected';
+    if(_ordF==='rejected') return o.orderStatus==='rejected';
+    if(_ordF==='all')      return o.orderStatus!=='rejected';
+    if(_ordF==='morning')  return isAdminDayOrder(o) && o.orderStatus!=='rejected';
+    if(_ordF==='evening')  return !isAdminDayOrder(o) && o.orderStatus!=='rejected';
+    return o.orderStatus===_ordF;
+  });
+  if(dateFilter){
+    src=src.filter(o=>{
+      const [y,m,d]=dateFilter.split('-');
+      return normDate(o.date)===`${d}/${m}/${y}`;
+    });
+  }
+  if(srch) src=src.filter(o=>(o.name||'').toLowerCase().includes(srch)||(o.phone||'').includes(srch)||(o.orderId||'').toLowerCase().includes(srch));
+  src=[...src].sort(ordNewest);
+
+  if(!src.length){ toast('No orders to export'); return; }
+
+  const morning=src.filter(o=>isAdminDayOrder(o));
+  const evening=src.filter(o=>!isAdminDayOrder(o));
+  const filterLabel=_ordF==='today'?'Today':_ordF==='morning'?'Morning':_ordF==='evening'?'Evening':_ordF;
+  const dateLabel=dateFilter?` | Date: ${dateFilter}`:'';
+
+  function buildPDFRows(list){
+    return list.map((o,i)=>{
+      let items=[]; try{items=safeP(o.items);}catch{}
+      const mu=`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(o.address||'')}`;
+      const isDay=isAdminDayOrder(o);
+      return `<div class="ord">
+<div class="oh"><b>#${i+1} · ${esc(o.orderId)}</b> &nbsp;<span class="tt ${isDay?'td':'tn'}">${isDay?'☀️ Morning':'🌙 Evening'}</span></div>
+<div style="font-weight:700">${esc(o.name)}</div>
+<div><a href="tel:${esc(o.phone)}">${esc(o.phone)}</a> &nbsp;|&nbsp; ${esc(fmtDate(o.date))} ${esc(fmtTime(o.time))}</div>
+<div style="color:#666;margin:3px 0">${esc(o.address)}</div>
+<a href="${mu}">📍 Google Maps</a>
+<div class="sep"></div>
+${items.map(it=>`<div class="row"><span>${esc(it.name)}${it.selectedVariant?` (${esc(it.selectedVariant)})`:''} ×${it.qty}</span><span>₹${Number(it.price)*it.qty}</span></div>`).join('')}
+${Number(o.deliveryCharge)>0?`<div class="row"><span style="color:#999">Delivery</span><span>₹${o.deliveryCharge}</span></div>`:''}
+${Number(o.discount)>0?`<div class="row"><span style="color:#2a9d8f">Discount</span><span>−₹${o.discount}</span></div>`:''}
+<div class="sep"></div>
+<div class="row"><span class="tot">TOTAL</span><span class="tot">₹${Number(o.finalAmount).toFixed(0)}</span></div>
+<div style="font-size:11px;color:#666;margin-top:4px">Status: ${esc(o.orderStatus)} | ${esc(o.userType||'daily')}</div>
+</div>`;
+    }).join('');
+  }
+
+  const nowIST=new Date(Date.now()+5.5*3600*1000);
+  const genDate=`${String(nowIST.getUTCDate()).padStart(2,'0')}/${String(nowIST.getUTCMonth()+1).padStart(2,'0')}/${nowIST.getUTCFullYear()} ${fmtTime(nowIST.toISOString())}`;
+
+  const html=`<!DOCTYPE html><html><head><meta charset="UTF-8"><title>Puro Bite Orders</title>
+<style>*{box-sizing:border-box}body{font-family:Arial,sans-serif;padding:16px;font-size:13px;color:#111;max-width:800px;margin:0 auto}
+h1{font-size:18px;color:#e63946;margin-bottom:3px}.sub{color:#999;font-size:11px;margin-bottom:12px}
+.sec-hdr{background:#fffbeb;border-left:4px solid #f59e0b;padding:8px 12px;font-weight:700;font-size:13px;margin:14px 0 8px;border-radius:4px}
+.sec-hdr.eve{background:#eef2ff;border-color:#6366f1}
+.ord{border:1px solid #e5e7eb;border-radius:8px;padding:11px;margin-bottom:10px;page-break-inside:avoid}
+.oh{margin-bottom:5px}.tt{font-size:10px;font-weight:700;padding:2px 7px;border-radius:8px;display:inline-block}
+.td{background:#fffde7;color:#c67c00;border:1px solid #fde68a}.tn{background:#e3f2fd;color:#1565c0;border:1px solid #90caf9}
+.row{display:flex;justify-content:space-between;margin-bottom:3px;font-size:12px}
+.sep{border-top:1px dashed #e5e7eb;margin:6px 0}.tot{font-size:14px;font-weight:800;color:#e63946}
+a{color:#2a9d8f}@media print{.np{display:none!important}}</style></head><body>
+<h1>🍱 Puro Bite – Orders Report</h1>
+<div class="sub">Filter: ${filterLabel}${dateLabel} | Total: ${src.length} orders | Generated: ${genDate}</div>
+<button class="np" onclick="window.print()" style="background:#e63946;color:#fff;padding:8px 16px;border:none;border-radius:7px;font-weight:bold;cursor:pointer;margin-bottom:12px">🖨️ Print / Save PDF</button>
+${morning.length?`<div class="sec-hdr">☀️ Morning Orders (${morning.length})</div>${buildPDFRows(morning)}`:''}
+${evening.length?`<div class="sec-hdr eve">🌙 Evening Orders (${evening.length})</div>${buildPDFRows(evening)}`:''}
+</body></html>`;
+  const w=window.open('','_blank');
+  if(!w){toast('Popup blocked!');return;}
+  w.document.write(html);w.document.close();
 }
 
 async function confirmReject(orderId){
@@ -2381,6 +2517,26 @@ document.addEventListener('DOMContentLoaded',()=>{
   const phInp=doc('promote-ph');
   if(phInp) phInp.addEventListener('keydown',e=>{ if(e.key==='Enter') searchUserToPromote(); });
 });
+
+// ════════════════════════════════════════════════
+// DELETE OLD DATA (Admin only)
+// ════════════════════════════════════════════════
+async function deleteOldData(){
+  const months=Number(doc('del-months').value)||3;
+  const msg=doc('del-data-msg');
+  if(!confirm(`⚠️ CONFIRM: ${months} mahine se purana data permanently delete hoga!\n\nYe undo nahi hoga. Kya aap sure hain?`)) return;
+  if(!confirm(`FINAL CONFIRM: Haan, delete karo ${months} mahine purana data.`)) return;
+  if(msg){ msg.textContent='⏳ Deleting...'; msg.style.color='var(--gr)'; }
+  try{
+    const result=await api('deleteOldData',{months});
+    if(msg){ msg.textContent=`✅ Done! ${result.deletedOrders||0} orders, ${result.deletedKhata||0} khata entries deleted.`; msg.style.color='var(--g)'; }
+    toast(`✅ Old data deleted! Orders: ${result.deletedOrders||0}, Khata: ${result.deletedKhata||0}`);
+    setTimeout(()=>{ if(msg) msg.textContent=''; },6000);
+  }catch(e){
+    if(msg){ msg.textContent='❌ '+e.message; msg.style.color='var(--p)'; }
+    toast('❌ '+e.message);
+  }
+}
 
 // ════════════════════════════════════════════════
 // STARTUP — Session restore + auto-refresh
