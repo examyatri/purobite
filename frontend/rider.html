@@ -366,7 +366,7 @@ body{font-family:var(--fb);background:var(--bg);color:var(--tx);max-width:520px;
 
 <script>
   const CFG = {
-    'GAS': 'https://purobite-v1.vercel.app/api',
+    'GAS': 'https://purobite.vercel.app/api',
     'KEY': 'PB_SECURE_API_KEY_2026'
   };
 
@@ -834,30 +834,53 @@ function toggleFilters(tab){
   body.classList.toggle('hide');
 }
 
-// ══ PDF EXPORT — individual ORDER TOTAL per card, NO grand total ══
+// ══ PDF EXPORT — sirf current filtered orders, morning/evening grouped ══
 function exportPDF(){
-  // Export active orders (out for delivery) for current delivery sheet
-  const src=_activeOrders.length?_activeOrders:_orders.filter(o=>o.orderStatus!=='delivered');
-  if(!src.length){toast('No active orders to export');return;}
-  const html=`<!DOCTYPE html><html><head><meta charset="UTF-8"><title>Delivery Sheet</title>
-<style>*{box-sizing:border-box}body{font-family:Arial,sans-serif;padding:16px;font-size:13px;color:#111;max-width:760px;margin:0 auto}
-h1{font-size:18px;color:#e63946;margin-bottom:3px}.sub{color:#999;font-size:11px;margin-bottom:12px}
-.ord{border:1px solid #e5e7eb;border-radius:8px;padding:11px;margin-bottom:12px;page-break-inside:avoid}
-.oh{display:flex;justify-content:space-between;margin-bottom:7px}
-.tt{font-size:10px;font-weight:700;padding:2px 7px;border-radius:8px;display:inline-block}
-.td{background:#fffde7;color:#c67c00;border:1px solid #fde68a}.tn{background:#e3f2fd;color:#1565c0;border:1px solid #90caf9}
-.row{display:flex;justify-content:space-between;margin-bottom:3px;font-size:12px}
-.sep{border-top:1px dashed #e5e7eb;margin:7px 0}.tot{font-size:15px;font-weight:800;color:#e63946}
-a{color:#2a9d8f}@media print{.np{display:none!important}}</style></head><body>
-<h1>🍱 Puro Bite – Delivery Sheet</h1>
-<div class="sub">Rider: ${esc(_rider.name)} | ${new Date().toLocaleString('en-IN')} | ${src.length} order(s)</div>
-<button class="np" onclick="window.print()" style="background:#e63946;color:#fff;padding:8px 16px;border:none;border-radius:7px;font-weight:bold;cursor:pointer;margin-bottom:12px">🖨️ Print / Save PDF</button>
-${src.map((o,i)=>{
-  let items=[]; try{items=safeP(o.items);}catch{}
-  const mu=`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(o.address)}`;
-  const isDay=isDayOrder(o);
-  return `<div class="ord">
-<div class="oh"><div><b>#${i+1} · ${esc(o.orderId)}</b><br><span class="tt ${isDay?'td':'tn'}">${isDay?'☀️ Morning':'🌙 Evening'}</span></div></div>
+  // Get active filters
+  const dv = doc('active-filter-date').value;
+  const tv = doc('active-filter-slot').value;
+
+  // Apply same filters as renderActive()
+  let src = _activeOrders.filter(o => {
+    if(dv && orderDateToISO(o.date) !== dv) return false;
+    if(tv !== 'all'){
+      const d = isDayOrder(o);
+      if(tv === 'day' && !d) return false;
+      if(tv === 'night' && d) return false;
+    }
+    return true;
+  });
+
+  // If no active orders match, try delivered tab filters too
+  if(!src.length && _currentTab === 'delivered'){
+    const ddv = doc('filter-date').value;
+    const dtv = doc('filter-slot').value;
+    src = _deliveredOrders.filter(o => {
+      if(ddv && orderDateToISO(o.date) !== ddv) return false;
+      if(dtv !== 'all'){
+        const d = isDayOrder(o);
+        if(dtv === 'day' && !d) return false;
+        if(dtv === 'night' && d) return false;
+      }
+      return true;
+    });
+  }
+
+  if(!src.length){toast('No orders to export for current filter');return;}
+
+  const morning = src.filter(o=>isDayOrder(o)).sort(sortOldest);
+  const evening = src.filter(o=>!isDayOrder(o)).sort(sortOldest);
+
+  const filterLabel = tv==='day'?'Morning Only':tv==='night'?'Evening Only':'All Slots';
+  const dateLabel = dv ? ` | Date: ${dv}` : '';
+
+  function buildCards(list, startIdx){
+    return list.map((o,i)=>{
+      let items=[]; try{items=safeP(o.items);}catch{}
+      const mu=`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(o.address)}`;
+      const isDay=isDayOrder(o);
+      return `<div class="ord">
+<div class="oh"><div><b>#${startIdx+i+1} · ${esc(o.orderId)}</b><br><span class="tt ${isDay?'td':'tn'}">${isDay?'☀️ Morning':'🌙 Evening'}</span></div></div>
 <div style="font-weight:700">${esc(o.name)}</div><div><a href="tel:${esc(o.phone)}">${esc(o.phone)}</a></div>
 <div class="sep"></div>
 <div>${esc(o.address)}</div><a href="${mu}">📍 Google Maps</a>
@@ -868,7 +891,27 @@ ${Number(o.discount)>0?`<div class="row"><span style="color:#2a9d8f">Discount</s
 <div class="sep"></div>
 <div class="row"><span class="tot">ORDER TOTAL</span><span class="tot">₹${Number(o.finalAmount).toFixed(0)}</span></div>
 <div style="font-size:11px;color:#666;margin-top:5px">${o.userType==='subscriber'?'👑 Wallet':'💰 Collect'} | ${esc(fmtDate(o.date))} ${esc(fmtTime(o.time))}</div>
-</div>`; }).join('')}
+</div>`;
+    }).join('');
+  }
+
+  const html=`<!DOCTYPE html><html><head><meta charset="UTF-8"><title>Delivery Sheet</title>
+<style>*{box-sizing:border-box}body{font-family:Arial,sans-serif;padding:16px;font-size:13px;color:#111;max-width:760px;margin:0 auto}
+h1{font-size:18px;color:#e63946;margin-bottom:3px}.sub{color:#999;font-size:11px;margin-bottom:12px}
+.sec{background:#fffbeb;border-left:4px solid #f59e0b;padding:8px 12px;font-weight:700;font-size:13px;margin:14px 0 8px;border-radius:4px}
+.sec.eve{background:#eef2ff;border-color:#6366f1}
+.ord{border:1px solid #e5e7eb;border-radius:8px;padding:11px;margin-bottom:12px;page-break-inside:avoid}
+.oh{display:flex;justify-content:space-between;margin-bottom:7px}
+.tt{font-size:10px;font-weight:700;padding:2px 7px;border-radius:8px;display:inline-block}
+.td{background:#fffde7;color:#c67c00;border:1px solid #fde68a}.tn{background:#e3f2fd;color:#1565c0;border:1px solid #90caf9}
+.row{display:flex;justify-content:space-between;margin-bottom:3px;font-size:12px}
+.sep{border-top:1px dashed #e5e7eb;margin:7px 0}.tot{font-size:15px;font-weight:800;color:#e63946}
+a{color:#2a9d8f}@media print{.np{display:none!important}}</style></head><body>
+<h1>🍱 Puro Bite – Delivery Sheet</h1>
+<div class="sub">Rider: ${esc(_rider.name)} | ${new Date().toLocaleString('en-IN')} | Filter: ${filterLabel}${dateLabel} | ${src.length} order(s)</div>
+<button class="np" onclick="window.print()" style="background:#e63946;color:#fff;padding:8px 16px;border:none;border-radius:7px;font-weight:bold;cursor:pointer;margin-bottom:12px">🖨️ Print / Save PDF</button>
+${morning.length ? `<div class="sec">☀️ Morning Orders (${morning.length})</div>${buildCards(morning,0)}` : ''}
+${evening.length ? `<div class="sec eve">🌙 Evening Orders (${evening.length})</div>${buildCards(evening,morning.length)}` : ''}
 </body></html>`;
   const win=window.open('','_blank');
   if(!win){toast('Popup blocked!');return;}
