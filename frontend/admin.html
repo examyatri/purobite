@@ -71,6 +71,11 @@ select.inp{appearance:none;background-image:url("data:image/svg+xml,%3Csvg xmlns
 .main{margin-left:var(--sw);flex:1;min-height:100vh;display:flex;flex-direction:column}
 .topbar{background:#fff;padding:16px 24px;display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid #e5e7eb;position:sticky;top:0;z-index:100}
 .topbar h2{font-family:var(--ff);font-size:19px;font-weight:700}
+.topbar-right{display:flex;align-items:center;gap:10px}
+#last-refreshed-lbl{font-size:11px;color:var(--gr);font-weight:500}
+.btn-refresh{background:rgba(0,0,0,.06);color:var(--dk);border:none;border-radius:9px;padding:7px 13px;font-family:var(--ff);font-weight:700;font-size:12px;cursor:pointer;display:flex;align-items:center;gap:6px;transition:all .18s}
+.btn-refresh:hover{background:rgba(0,0,0,.1)}
+.btn-refresh:active{transform:scale(.96)}
 .ca{padding:22px 24px;flex:1}
 .pg-v{display:none}.pg-v.act{display:block}
 
@@ -250,10 +255,10 @@ tr:hover td{background:#fafafa}
         <button id="menu-toggle" onclick="toggleSb()" style="display:none;background:none;border:none;cursor:pointer;font-size:20px"><i class="fa-solid fa-bars"></i></button>
         <h2 id="pg-title">Dashboard</h2>
       </div>
-      <div style="display:flex;gap:8px;align-items:center">
+      <div class="topbar-right">
+        <span id="last-refreshed-lbl" style="font-size:11px;color:var(--gr);font-weight:500"></span>
         <span id="admin-badge" style="font-size:13px;font-weight:600;color:var(--gr)">Admin</span>
-        <span class="live-badge" id="live-badge" style="display:none"><span class="live-dot"></span>Live</span>
-        <button class="btn btn-ghost btn-sm" onclick="refreshCurrent()"><i class="fa-solid fa-rotate"></i> Refresh</button>
+        <button class="btn-refresh" onclick="refreshCurrent()"><i class="fa-solid fa-rotate"></i> Refresh</button>
       </div>
     </div>
     <div class="ca">
@@ -285,14 +290,22 @@ tr:hover td{background:#fafafa}
           <button class="f-btn" style="color:#e63946" onclick="filterOrd('rejected',this)">Rejected</button>
         </div>
         <div class="fb" style="margin-top:6px">
-          <input class="s-inp" type="text" placeholder="Search name/phone/ID..." id="ord-srch">
+          <input class="s-inp" type="text" placeholder="Search name/phone/ID..." id="ord-srch"
+            onkeydown="if(event.key==='Enter')renderOrds()">
           <button class="btn btn-p btn-sm" onclick="renderOrds()"><i class="fa-solid fa-magnifying-glass"></i> Search</button>
           <button class="btn btn-ghost btn-sm" onclick="exportOrdsPDF()" title="Export PDF"><i class="fa-solid fa-file-pdf"></i> PDF</button>
-          <input class="s-inp" type="date" id="ord-date-filter" title="Filter by date" style="max-width:160px">
-          <button class="btn btn-ghost btn-sm" onclick="doc('ord-date-filter').value='';renderOrds()">✕ Date</button>
+          <input class="s-inp" type="date" id="ord-date-filter" title="Filter by specific date" style="max-width:160px"
+            onchange="onDateFilterChange()">
+          <button class="btn btn-ghost btn-sm" onclick="clearDateFilter()">✕ Date</button>
         </div>
         <div class="tc">
-          <div class="th"><h3 id="ord-count-lbl">Orders</h3><button class="btn btn-ghost btn-sm" onclick="loadOrds()"><i class="fa-solid fa-rotate"></i></button></div>
+          <div class="th">
+            <h3 id="ord-count-lbl">Orders</h3>
+            <div style="display:flex;gap:8px;align-items:center">
+              <button class="btn btn-ghost btn-sm" id="load-all-btn" onclick="toggleLoadAll()" title="Load all dates">All Dates</button>
+              <button class="btn btn-ghost btn-sm" onclick="loadOrds()"><i class="fa-solid fa-rotate"></i></button>
+            </div>
+          </div>
           <div style="overflow-x:auto"><table><thead><tr><th>Order ID</th><th>Customer</th><th>Items</th><th>Amount</th><th>Type</th><th>Payment</th><th>Status</th><th>Date</th><th>Rider</th><th>Actions</th></tr></thead><tbody id="ord-tb"></tbody></table></div>
         </div>
       </div>
@@ -461,21 +474,52 @@ tr:hover td{background:#fafafa}
         </div>
         <!-- Delete Old Data Card (Admin Only) -->
         <div class="tc admin-only" style="max-width:520px;margin-bottom:20px;border:2px solid #fde8ea">
-          <div class="th"><h3>🗑️ Delete Old Data</h3><span style="font-size:12px;color:var(--p)">Free up Supabase storage</span></div>
+          <div class="th"><h3>🗑️ Data Cleanup</h3><span style="font-size:12px;color:var(--p)">Free up Supabase storage — manual only</span></div>
           <div style="padding:18px">
-            <div style="background:#fff8f8;border-radius:10px;padding:12px;margin-bottom:14px;font-size:13px;color:#c1121f;font-weight:600;border-left:4px solid var(--p)">
-              ⚠️ Ye action permanent hai aur undo nahi ho sakta! 3 mahine se purane saare orders, khata transactions delete ho jayenge.
+            <div style="background:#fff8f8;border-radius:10px;padding:12px;margin-bottom:16px;font-size:13px;color:#c1121f;font-weight:600;border-left:4px solid var(--p)">
+              ⚠️ Permanent action — undo nahi hoga! Sirf admin manually delete kare.
             </div>
+
+            <!-- Delete Mode Selector -->
             <div class="fg">
-              <label class="lbl">Delete data older than</label>
-              <select id="del-months" class="inp" style="max-width:200px">
-                <option value="3">3 Months</option>
-                <option value="6">6 Months</option>
-                <option value="1">1 Month</option>
+              <label class="lbl">Delete Mode</label>
+              <select id="del-mode" class="inp" style="max-width:260px" onchange="onDelModeChange()">
+                <option value="days">Last N Days</option>
+                <option value="months">Last N Months</option>
+                <option value="custom">Custom Cutoff Date</option>
               </select>
             </div>
+
+            <!-- Days option -->
+            <div id="del-days-wrap" class="fg">
+              <label class="lbl">Delete orders older than</label>
+              <select id="del-days" class="inp" style="max-width:200px">
+                <option value="5">5 Days</option>
+                <option value="30">30 Days</option>
+                <option value="60">60 Days</option>
+                <option value="90">90 Days</option>
+              </select>
+            </div>
+
+            <!-- Months option -->
+            <div id="del-months-wrap" class="fg hide">
+              <label class="lbl">Delete orders older than</label>
+              <select id="del-months" class="inp" style="max-width:200px">
+                <option value="1">1 Month</option>
+                <option value="3">3 Months</option>
+                <option value="6">6 Months</option>
+              </select>
+            </div>
+
+            <!-- Custom date option -->
+            <div id="del-custom-wrap" class="fg hide">
+              <label class="lbl">Delete all orders BEFORE this date</label>
+              <input id="del-custom-date" class="inp" type="date" style="max-width:200px">
+              <div style="font-size:11px;color:var(--gr);margin-top:5px">Orders on or after this date will be kept</div>
+            </div>
+
             <div id="del-data-msg" style="font-size:13px;margin-top:8px;color:var(--gr)"></div>
-            <button class="btn btn-red" onclick="deleteOldData()" style="margin-top:8px">
+            <button class="btn btn-red" onclick="deleteOldData()" style="margin-top:10px">
               <i class="fa-solid fa-trash"></i> Delete Old Data
             </button>
           </div>
@@ -769,7 +813,7 @@ tr:hover td{background:#fafafa}
 // CONFIG
 // ════════════════════════════════════════════════
   const CFG = {
-    'GAS': 'https://purobite.vercel.app/api',
+    'GAS': 'https://purobite-v1.vercel.app/api',
     'KEY': 'PB_SECURE_API_KEY_2026'
   };
 
@@ -827,11 +871,33 @@ const ACreds={
   get:()=>{ try{ return JSON.parse(localStorage.getItem('pb_admin_creds')); }catch{ return null; } }
 };
 
-// Session store — full session in sessionStorage (survives F5 but NOT tab close)
+// Session store — localStorage with 24h expiry, sessionStorage fallback
+const _SESS_TTL = 24 * 60 * 60 * 1000;
 const SStore={
-  save:(s)=>{ try{ sessionStorage.setItem('pb_admin_sess',JSON.stringify(s)); }catch{} },
-  get:()=>{ try{ return JSON.parse(sessionStorage.getItem('pb_admin_sess')); }catch{ return null; } },
-  clear:()=>{ try{ sessionStorage.removeItem('pb_admin_sess'); }catch{} }
+  save:(s)=>{
+    const p=JSON.stringify({data:s,exp:Date.now()+_SESS_TTL});
+    try{localStorage.setItem('pb_admin_sess',p);}catch{}
+    try{sessionStorage.setItem('pb_admin_sess',p);}catch{}
+  },
+  get:()=>{
+    let raw=null;
+    try{raw=localStorage.getItem('pb_admin_sess');}catch{}
+    if(!raw){try{raw=sessionStorage.getItem('pb_admin_sess');}catch{}}
+    if(!raw) return null;
+    try{
+      const p=JSON.parse(raw);
+      if(p.exp&&Date.now()>p.exp){
+        try{localStorage.removeItem('pb_admin_sess');}catch{}
+        try{sessionStorage.removeItem('pb_admin_sess');}catch{}
+        return null;
+      }
+      return p.data||p;
+    }catch{return null;}
+  },
+  clear:()=>{
+    try{localStorage.removeItem('pb_admin_sess');}catch{}
+    try{sessionStorage.removeItem('pb_admin_sess');}catch{}
+  }
 };
 
 const Session={
@@ -913,20 +979,17 @@ function showApp(session){
   doc('app').classList.remove('hide');
   doc('admin-badge').textContent=(session.name||'User')+' · '+(session.role==='admin'?'Admin':'Staff');
   doc('sb-role-label').textContent=session.role==='admin'?'Admin Panel':'Staff Panel';
-  const lb=doc('live-badge'); if(lb) lb.style.display='inline-flex';
   applyRoleUI(session.role);
   showPg(session.role==='admin'?'dashboard':'orders');
   if(window.innerWidth<=768){ doc('menu-toggle').style.display='block'; doc('sb-ov').classList.add('hide'); }
-  startAutoRefresh();
+  _setLastRefreshed();
 }
 
 function doLogout(){
   if(!confirm('Logout?')) return;
-  stopAutoRefresh();
   Session.clear();
   doc('app').classList.add('hide');
   doc('auth-pg').classList.remove('hide');
-  const lb=doc('live-badge'); if(lb) lb.style.display='none';
   autofillAdminCreds();
 }
 
@@ -947,33 +1010,23 @@ function applyRoleUI(role){
 // ════════════════════════════════════════════════
 // SIDEBAR (mobile)
 // ════════════════════════════════════════════════
-let _autoRefreshTimer=null;
-const AUTO_REFRESH_MS=30000; // 30 seconds
+let _lastRefreshed = null;
 
-function startAutoRefresh(){
-  stopAutoRefresh();
-  _autoRefreshTimer=setInterval(()=>{
-    if(!Session.get()) return stopAutoRefresh();
-    if(document.hidden) return; // don't fetch while tab is hidden
-    // Silent refresh (no loading spinner, just updates data)
-    silentRefresh();
-  }, AUTO_REFRESH_MS);
+function _setLastRefreshed() {
+  _lastRefreshed = Date.now();
+  const el = doc('last-refreshed-lbl');
+  if (el) el.textContent = 'Refreshed just now';
 }
 
-function stopAutoRefresh(){
-  if(_autoRefreshTimer){ clearInterval(_autoRefreshTimer); _autoRefreshTimer=null; }
+function _updateRefreshedLabel() {
+  if (!_lastRefreshed) return;
+  const el = doc('last-refreshed-lbl');
+  if (!el) return;
+  const mins = Math.floor((Date.now() - _lastRefreshed) / 60000);
+  el.textContent = mins < 1 ? 'Refreshed just now' : `Refreshed ${mins} min ago`;
 }
-
-async function silentRefresh(){
-  const m={
-    dashboard:loadDash,
-    orders:()=>api('adminGetOrders').then(d=>{ _ords=d; renderOrds(); }).catch(()=>{}),
-    subscribers:()=>api('adminGetSubscribers').then(d=>{ _subs=d; renderSubs(); }).catch(()=>{}),
-    khata:()=>api('adminGetAllKhata').then(d=>{ _khataData=d; renderKhata(); updateKhataStats(d); }).catch(()=>{}),
-    users:()=>api('getUsers').then(d=>{ _users=d; renderUsers(); }).catch(()=>{}),
-  };
-  if(m[_curPg]) try{ await m[_curPg](); }catch{}
-}
+// Update "X min ago" label every minute passively (no API calls)
+setInterval(_updateRefreshedLabel, 60000);
 
 function updateKhataStats(data){
   const total=data.reduce((s,k)=>s+(Number(k.balance)||0),0);
@@ -1004,13 +1057,21 @@ function showPg(name){
   if(loaders[name]) loaders[name]();
 }
 
-function refreshCurrent(){ const m={dashboard:loadDash,orders:loadOrds,menu:loadMenu,coupons:loadCpns,subscribers:loadSubs,users:loadUsers,riders:loadRiders,bulk:initBulk,khata:loadKhata,staff:loadStaff,settings:loadSettings}; if(m[_curPg]) m[_curPg](); }
+function refreshCurrent(){
+  const m={
+    dashboard:loadDash,
+    orders:()=>loadOrds(_ordDateParam||''),
+    menu:loadMenu,coupons:loadCpns,subscribers:loadSubs,
+    users:loadUsers,riders:loadRiders,bulk:initBulk,
+    khata:loadKhata,staff:loadStaff,settings:loadSettings
+  };
+  if(m[_curPg]) m[_curPg]();
+}
 
 // ════════════════════════════════════════════════
 // DASHBOARD
 // ════════════════════════════════════════════════
 async function loadDash(){
-  // Show skeleton placeholders while loading
   ['s-tod-ord','s-tod-rev','s-mo-rev','s-tot-ord','s-users','s-subs','s-wallet-bal'].forEach(id=>{
     const el=doc(id);
     if(el) el.innerHTML='<div class="sk" style="height:32px;width:80px;border-radius:8px"></div>';
@@ -1024,24 +1085,51 @@ async function loadDash(){
     doc('s-users').textContent=a.totalUsers||0;
     doc('s-subs').textContent=a.totalSubscribers||0;
     const wb=doc('s-wallet-bal'); if(wb) wb.textContent='₹'+(a.totalWalletBalance||0);
+    _setLastRefreshed();
   }catch(e){ toast('Dashboard error: '+e.message); }
+}
 }
 
 // ════════════════════════════════════════════════
 // ORDERS
 // ════════════════════════════════════════════════
-let _ords=[],_ordF='today';
+let _ords=[],_ordF='today',_ordDateParam=''; // _ordDateParam: '' = today, 'all' = all dates, 'YYYY-MM-DD' = specific
 
-async function loadOrds(){
+async function loadOrds(dateParam){
+  if(dateParam !== undefined) _ordDateParam = dateParam;
+  const apiDate = _ordDateParam || ''; // empty = backend uses today
   doc('ord-tb').innerHTML='<tr><td colspan="10" style="padding:0"><div class="sk sk-row" style="margin:10px 14px"></div><div class="sk sk-row" style="margin:8px 14px"></div><div class="sk sk-row" style="margin:8px 14px"></div></td></tr>';
-  try{ _ords=await api('adminGetOrders'); renderOrds(); }
-  catch(e){ toast('Orders error: '+e.message); }
+  try{
+    _ords=await api('adminGetOrders',{date: apiDate||undefined});
+    _setLastRefreshed();
+    renderOrds();
+  }catch(e){ toast('Orders error: '+e.message); }
 }
 
 function filterOrd(f,btn){
+  const statusTabs=['preparing','out for delivery','delivered','rejected'];
+  const prev=_ordF;
   _ordF=f;
   document.querySelectorAll('#pg-orders .fb:first-child .f-btn').forEach(b=>b.classList.remove('act'));
-  btn.classList.add('act'); renderOrds();
+  btn.classList.add('act');
+  // If switching to a status tab (lazy load — fetch all dates for that status)
+  if(statusTabs.includes(f) && !statusTabs.includes(prev)){
+    loadOrdsByStatus(f);
+  } else if((f==='today'||f==='morning'||f==='evening'||f==='all') && statusTabs.includes(prev)){
+    // Switch back from status tab — reload today's data
+    loadOrds('');
+  } else {
+    renderOrds();
+  }
+}
+
+async function loadOrdsByStatus(status){
+  doc('ord-tb').innerHTML='<tr><td colspan="10" style="padding:0"><div class="sk sk-row" style="margin:10px 14px"></div><div class="sk sk-row" style="margin:8px 14px"></div></td></tr>';
+  try{
+    _ords=await api('adminGetOrdersByDate',{status,limit:200});
+    _setLastRefreshed();
+    renderOrds();
+  }catch(e){ toast('Load error: '+e.message); }
 }
 
 // ── helpers used only by renderOrds ──────────────────────────
@@ -1064,33 +1152,37 @@ function ordNewest(a,b){
 
 function renderOrds(){
   const srch=(doc('ord-srch').value||'').toLowerCase();
-  const dateFilter=doc('ord-date-filter')?doc('ord-date-filter').value:'';
-  const today=todayIST();
+  const dateFilter=doc('ord-date-filter')?doc('ord-date-filter').value:''; // YYYY-MM-DD from input
+  const today=todayIST(); // DD/MM/YYYY for legacy, but we also need ISO
+  const todayISO=todayISTiso();
   const sc={pending:'b-y',preparing:'b-o','out for delivery':'b-bl',delivered:'b-g',paid:'b-g',rejected:'b-r'};
+
+  // Normalize an order's date to YYYY-MM-DD for comparison
+  function ordDateISO(o){
+    const d=String(o.date||'').trim();
+    if(/^\d{4}-\d{2}-\d{2}$/.test(d)) return d;
+    if(/^\d{2}\/\d{2}\/\d{4}$/.test(d)){const[dd,mm,yyyy]=d.split('/');return `${yyyy}-${mm}-${dd}`;}
+    return '';
+  }
 
   // Base filter by tab
   let filtered=_ords.filter(o=>{
-    if(_ordF==='today')    return normDate(o.date)===today && o.orderStatus!=='rejected';
+    const iso=ordDateISO(o);
+    if(_ordF==='today')    return iso===todayISO && o.orderStatus!=='rejected';
     if(_ordF==='rejected') return o.orderStatus==='rejected';
     if(_ordF==='all')      return o.orderStatus!=='rejected';
-    if(_ordF==='morning')  return isAdminDayOrder(o) && o.orderStatus!=='rejected';
-    if(_ordF==='evening')  return !isAdminDayOrder(o) && o.orderStatus!=='rejected';
+    if(_ordF==='morning')  return iso===todayISO && isAdminDayOrder(o) && o.orderStatus!=='rejected';
+    if(_ordF==='evening')  return iso===todayISO && !isAdminDayOrder(o) && o.orderStatus!=='rejected';
     return o.orderStatus===_ordF;
   });
 
-  // Date filter (from date input)
+  // Date filter (from date input — YYYY-MM-DD)
   if(dateFilter){
-    filtered=filtered.filter(o=>{
-      // dateFilter is YYYY-MM-DD, normDate returns DD/MM/YYYY — convert to compare
-      const [y,m,d]=dateFilter.split('-');
-      const target=`${d}/${m}/${y}`;
-      return normDate(o.date)===target;
-    });
+    filtered=filtered.filter(o=>ordDateISO(o)===dateFilter);
   }
 
-  // Search filter
+  // Search filter — only applied on button click (srch is committed value)
   filtered=filtered.filter(o=>!srch||(o.name||'').toLowerCase().includes(srch)||(o.phone||'').includes(srch)||(o.orderId||'').toLowerCase().includes(srch));
-
   // Always newest first
   filtered = [...filtered].sort(ordNewest);
 
@@ -1156,25 +1248,22 @@ function renderOrds(){
 // ORDERS PDF EXPORT — only currently filtered orders
 // ════════════════════════════════════════════════
 function exportOrdsPDF(){
-  // Get the currently visible filtered list (same logic as renderOrds but return array)
   const srch=(doc('ord-srch').value||'').toLowerCase();
   const dateFilter=doc('ord-date-filter')?doc('ord-date-filter').value:'';
-  const today=todayIST();
+  const todayISO=todayISTiso();
+
+  function ordDateISO(o){const d=String(o.date||'').trim();if(/^\d{4}-\d{2}-\d{2}$/.test(d))return d;if(/^\d{2}\/\d{2}\/\d{4}$/.test(d)){const[dd,mm,yyyy]=d.split('/');return `${yyyy}-${mm}-${dd}`;}return '';}
 
   let src=_ords.filter(o=>{
-    if(_ordF==='today')    return normDate(o.date)===today && o.orderStatus!=='rejected';
+    const iso=ordDateISO(o);
+    if(_ordF==='today')    return iso===todayISO && o.orderStatus!=='rejected';
     if(_ordF==='rejected') return o.orderStatus==='rejected';
     if(_ordF==='all')      return o.orderStatus!=='rejected';
-    if(_ordF==='morning')  return isAdminDayOrder(o) && o.orderStatus!=='rejected';
-    if(_ordF==='evening')  return !isAdminDayOrder(o) && o.orderStatus!=='rejected';
+    if(_ordF==='morning')  return iso===todayISO && isAdminDayOrder(o) && o.orderStatus!=='rejected';
+    if(_ordF==='evening')  return iso===todayISO && !isAdminDayOrder(o) && o.orderStatus!=='rejected';
     return o.orderStatus===_ordF;
   });
-  if(dateFilter){
-    src=src.filter(o=>{
-      const [y,m,d]=dateFilter.split('-');
-      return normDate(o.date)===`${d}/${m}/${y}`;
-    });
-  }
+  if(dateFilter) src=src.filter(o=>ordDateISO(o)===dateFilter);
   if(srch) src=src.filter(o=>(o.name||'').toLowerCase().includes(srch)||(o.phone||'').includes(srch)||(o.orderId||'').toLowerCase().includes(srch));
   src=[...src].sort(ordNewest);
 
@@ -1362,16 +1451,18 @@ async function autoSelectEligible(){
   if(infoEl){ infoEl.textContent='Checking today\'s orders...'; infoEl.classList.remove('hide'); }
 
   try{
-    // Get today's orders to check who already ordered
+    // adminGetOrders defaults to today — no need to pass date param
     const allOrders=await api('adminGetOrders');
-    // Get today's date string in DD/MM/YYYY (IST)
-    const ist=new Date(Date.now()+5.5*3600000);
-    const todayStr=String(ist.getUTCDate()).padStart(2,'0')+'/'+String(ist.getUTCMonth()+1).padStart(2,'0')+'/'+ist.getUTCFullYear();
+    // ISO today for comparison (orders now stored as YYYY-MM-DD)
+    const todayISO=todayISTiso();
     // Build set of phones that already have an order today
     const orderedToday=new Set();
     allOrders.forEach(o=>{
-      const oDate=normDate(o.date);
-      if(oDate===todayStr) orderedToday.add(String(o.phone).replace(/\D/g,''));
+      // Normalize to ISO regardless of stored format
+      const d=String(o.date||'').trim();
+      const iso=/^\d{4}-\d{2}-\d{2}$/.test(d)?d:
+                /^\d{2}\/\d{2}\/\d{4}$/.test(d)?(()=>{const[dd,mm,yyyy]=d.split('/');return `${yyyy}-${mm}-${dd}`;})():'';
+      if(iso===todayISO) orderedToday.add(String(o.phone).replace(/\D/g,''));
     });
     // Select only those with sufficient balance AND no order today
     let eligibleCount=0, skippedBalance=0, skippedOrdered=0;
@@ -1967,6 +2058,35 @@ function todayIST(){
   const ist=new Date(now.getTime()+5.5*60*60*1000);
   return String(ist.getUTCDate()).padStart(2,'0')+'/'+String(ist.getUTCMonth()+1).padStart(2,'0')+'/'+ist.getUTCFullYear();
 }
+// todayISTiso: → "YYYY-MM-DD" (for Supabase ISO date comparisons)
+function todayISTiso(){
+  const ist=new Date(Date.now()+5.5*3600000);
+  return ist.getUTCFullYear()+'-'+String(ist.getUTCMonth()+1).padStart(2,'0')+'-'+String(ist.getUTCDate()).padStart(2,'0');
+}
+
+// Date filter helpers
+function onDateFilterChange(){
+  // When a specific date is picked, load orders for that date from server
+  const v=doc('ord-date-filter').value;
+  if(v){
+    _ordDateParam=v;
+    loadOrds(v);
+  }
+}
+function clearDateFilter(){
+  doc('ord-date-filter').value='';
+  _ordDateParam='';
+  loadOrds('');
+}
+
+// Toggle "Load All Dates" vs "Today Only"
+let _loadAllActive=false;
+function toggleLoadAll(){
+  _loadAllActive=!_loadAllActive;
+  const btn=doc('load-all-btn');
+  if(btn){btn.textContent=_loadAllActive?'Today Only':'All Dates';btn.style.background=_loadAllActive?'var(--grad)':'';btn.style.color=_loadAllActive?'#fff':'';}
+  loadOrds(_loadAllActive?'all':'');
+}
 
 // dateToYMD: any date value → "YYYY-MM-DD" for <input type=date> comparison
 function dateToYMD(v){
@@ -2521,22 +2641,53 @@ document.addEventListener('DOMContentLoaded',()=>{
 // ════════════════════════════════════════════════
 // DELETE OLD DATA (Admin only)
 // ════════════════════════════════════════════════
+function onDelModeChange(){
+  const mode=doc('del-mode').value;
+  doc('del-days-wrap').classList.toggle('hide', mode!=='days');
+  doc('del-months-wrap').classList.toggle('hide', mode!=='months');
+  doc('del-custom-wrap').classList.toggle('hide', mode!=='custom');
+}
+
 async function deleteOldData(){
-  const months=Number(doc('del-months').value)||3;
+  const mode=doc('del-mode')?doc('del-mode').value:'months';
   const msg=doc('del-data-msg');
-  if(!confirm(`⚠️ CONFIRM: ${months} mahine se purana data permanently delete hoga!\n\nYe undo nahi hoga. Kya aap sure hain?`)) return;
-  if(!confirm(`FINAL CONFIRM: Haan, delete karo ${months} mahine purana data.`)) return;
-  if(msg){ msg.textContent='⏳ Deleting...'; msg.style.color='var(--gr)'; }
+  let payload={};
+  let confirmLabel='';
+
+  if(mode==='custom'){
+    const cd=doc('del-custom-date')?doc('del-custom-date').value:'';
+    if(!cd){ toast('Custom date select karein'); return; }
+    payload={cutoffDate:cd};
+    confirmLabel=`${cd} se purane saare orders`;
+  } else if(mode==='days'){
+    const days=Number(doc('del-days')?doc('del-days').value:90)||90;
+    payload={days};
+    confirmLabel=`${days} din se purane orders`;
+  } else {
+    const months=Number(doc('del-months')?doc('del-months').value:3)||3;
+    payload={months};
+    confirmLabel=`${months} mahine se purane orders`;
+  }
+
+  if(!confirm(`⚠️ CONFIRM: ${confirmLabel} permanently delete honge.\n\nYe undo nahi hoga. Sure hain?`)) return;
+  if(!confirm(`FINAL CONFIRM: Haan, permanently delete karo.`)) return;
+
+  if(msg){ msg.textContent='⏳ Deleting old data...'; msg.style.color='var(--gr)'; }
   try{
-    const result=await api('deleteOldData',{months});
-    if(msg){ msg.textContent=`✅ Done! ${result.deletedOrders||0} orders, ${result.deletedKhata||0} khata entries deleted.`; msg.style.color='var(--g)'; }
-    toast(`✅ Old data deleted! Orders: ${result.deletedOrders||0}, Khata: ${result.deletedKhata||0}`);
-    setTimeout(()=>{ if(msg) msg.textContent=''; },6000);
+    const result=await api('deleteOldData',payload);
+    const cutLabel=result.cutoffDate||'';
+    if(msg){
+      msg.textContent=`✅ Done! ${result.deletedOrders||0} orders, ${result.deletedKhata||0} khata entries deleted (before ${cutLabel}).`;
+      msg.style.color='var(--g)';
+    }
+    toast(`✅ Deleted! Orders: ${result.deletedOrders||0}, Khata: ${result.deletedKhata||0}`);
+    setTimeout(()=>{ if(msg) msg.textContent=''; },8000);
   }catch(e){
     if(msg){ msg.textContent='❌ '+e.message; msg.style.color='var(--p)'; }
     toast('❌ '+e.message);
   }
 }
+
 
 // ════════════════════════════════════════════════
 // STARTUP — Session restore + auto-refresh
