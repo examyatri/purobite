@@ -320,33 +320,46 @@ async function getUserOrders(data) {
 
 async function adminGetOrders(data = {}) {
   const ist = getIST();
-  // Default: today only. Pass date='all' to get all, or date='YYYY-MM-DD' for specific day
-  const filterDate = data.date || istDateISO(ist);
+  const todayISO    = istDateISO(ist);    // "YYYY-MM-DD"
+  const todayLegacy = istDateStr(ist);    // "DD/MM/YYYY"
+
   let query = supabase
     .from('orders')
     .select('order_id,user_id,name,phone,address,items,total_amount,delivery_charge,final_amount,coupon_code,discount,user_type,payment_status,order_status,order_date,order_time,rider_id')
-    .order('order_date', { ascending: false })
     .order('order_id', { ascending: false });
-  if (filterDate !== 'all') {
-    query = query.eq('order_date', filterDate);
+
+  const filterDate = data.date; // undefined = today, 'all' = no filter, 'YYYY-MM-DD' = specific
+  if (!filterDate || filterDate === '') {
+    // Today only — match both possible date formats stored in DB
+    query = query.or(`order_date.eq.${todayISO},order_date.eq.${todayLegacy}`);
+  } else if (filterDate !== 'all') {
+    // Specific date — convert to both formats and match either
+    const d = filterDate; // YYYY-MM-DD from date input
+    const [y,m,dd] = d.split('-');
+    const legacy = `${dd}/${m}/${y}`;
+    query = query.or(`order_date.eq.${d},order_date.eq.${legacy}`);
   }
+  // 'all' = no date filter at all
+
   const { data: orders, error } = await query;
   if (error) throw new Error(error.message);
   return (orders || []).map(formatOrder);
 }
 
-// adminGetOrdersByDate: for lazy-load status tabs (Preparing/Out/Delivered/Rejected)
-// Fetches a specific status across ALL dates (paginated, newest first)
+// adminGetOrdersByDate: lazy-load status tabs — works with both old and new date formats
 async function adminGetOrdersByDate(data = {}) {
   const { status, date, limit: lim = 200 } = data;
   let query = supabase
     .from('orders')
     .select('order_id,user_id,name,phone,address,items,total_amount,delivery_charge,final_amount,coupon_code,discount,user_type,payment_status,order_status,order_date,order_time,rider_id')
-    .order('order_date', { ascending: false })
     .order('order_id', { ascending: false })
     .limit(lim);
   if (status) query = query.eq('order_status', status);
-  if (date && date !== 'all') query = query.eq('order_date', date);
+  if (date && date !== 'all') {
+    const [y,m,dd] = date.split('-');
+    const legacy = `${dd}/${m}/${y}`;
+    query = query.or(`order_date.eq.${date},order_date.eq.${legacy}`);
+  }
   const { data: orders, error } = await query;
   if (error) throw new Error(error.message);
   return (orders || []).map(formatOrder);
@@ -709,16 +722,24 @@ async function riderLogin(data) {
 async function getRiderOrders(data) {
   if (!data.riderId) throw new Error('riderId required');
   const ist = getIST();
-  const today = istDateISO(ist);
-  // Today's pending/preparing/out-for-delivery + all orders assigned to this rider
+  const todayISO = istDateISO(ist);   // "YYYY-MM-DD" — new format
+  const todayLegacy = istDateStr(ist); // "DD/MM/YYYY" — old format
+
+  // Fetch orders assigned to this rider OR today's active orders (both date formats)
   const { data: orders, error } = await supabase
     .from('orders')
     .select('order_id,user_id,name,phone,address,items,total_amount,delivery_charge,final_amount,coupon_code,discount,user_type,payment_status,order_status,order_date,order_time,rider_id')
-    .or(`rider_id.eq.${data.riderId},and(order_date.eq.${today},order_status.in.(pending,preparing,out for delivery))`)
-    .order('order_date', { ascending: false })
+    .or(`rider_id.eq.${data.riderId},order_date.eq.${todayISO},order_date.eq.${todayLegacy}`)
     .order('order_id', { ascending: false });
   if (error) throw new Error(error.message);
-  return (orders || []).map(formatOrder);
+
+  // Filter to only relevant statuses (active today + all assigned)
+  const activeStatuses = new Set(['pending','preparing','out for delivery']);
+  const result = (orders || []).filter(o => {
+    if (o.rider_id === data.riderId) return true; // always include assigned
+    return activeStatuses.has(o.order_status);    // today's active only
+  });
+  return result.map(formatOrder);
 }
 
 async function getRiders() {
@@ -950,48 +971,56 @@ function getDefaultDay(d, name) {
 // -------------------------------------------------------------
 async function deleteOldData(data) {
   let cutoffISO;
-
   if (data.cutoffDate && /^\d{4}-\d{2}-\d{2}$/.test(data.cutoffDate)) {
-    // Custom date range — delete everything BEFORE this date
     cutoffISO = data.cutoffDate;
   } else if (data.days && Number(data.days) > 0) {
-    const cutoff = new Date(Date.now() + 5.5 * 3600000);
-    cutoff.setUTCDate(cutoff.getUTCDate() - Number(data.days));
-    cutoffISO = istDateISO(cutoff);
+    const c = new Date(Date.now() + 5.5 * 3600000);
+    c.setUTCDate(c.getUTCDate() - Number(data.days));
+    cutoffISO = istDateISO(c);
   } else {
     const months = Number(data.months) || 3;
-    const cutoff = new Date(Date.now() + 5.5 * 3600000);
-    cutoff.setUTCMonth(cutoff.getUTCMonth() - months);
-    cutoffISO = istDateISO(cutoff);
+    const c = new Date(Date.now() + 5.5 * 3600000);
+    c.setUTCMonth(c.getUTCMonth() - months);
+    cutoffISO = istDateISO(c);
   }
 
-  // Single batch delete — Supabase lt() on ISO date column
   let deletedOrders = 0;
   try {
-    // First count (for confirmation message)
-    const { count } = await supabase.from('orders')
-      .select('order_id', { count: 'exact', head: true })
-      .lt('order_date', cutoffISO);
-    deletedOrders = count || 0;
-
-    if (deletedOrders > 0) {
-      const { error } = await supabase.from('orders').delete().lt('order_date', cutoffISO);
-      if (error) throw new Error('Orders delete failed: ' + error.message);
+    // Step 1: Delete new ISO-format orders with single batch query
+    const { count: isoCount } = await supabase.from('orders')
+      .select('order_id', { count: 'exact', head: true }).lt('order_date', cutoffISO);
+    if ((isoCount || 0) > 0) {
+      await supabase.from('orders').delete().lt('order_date', cutoffISO);
+      deletedOrders += isoCount;
     }
-  } catch(e) { console.error('Delete orders error:', e.message); deletedOrders = -1; }
 
-  // Delete old khata transactions (single batch by created_at)
+    // Step 2: Handle legacy DD/MM/YYYY orders — fetch all, filter by parsed date, batch delete
+    const [y, m, d] = cutoffISO.split('-').map(Number);
+    const cutoffDate = new Date(y, m - 1, d);
+    const { data: legacyOrders } = await supabase.from('orders')
+      .select('order_id, order_date')
+      .like('order_date', '__/__/____'); // match DD/MM/YYYY pattern
+    const legacyIds = (legacyOrders || []).filter(o => {
+      const parts = String(o.order_date).split('/');
+      if (parts.length !== 3) return false;
+      const oDate = new Date(Number(parts[2]), Number(parts[1]) - 1, Number(parts[0]));
+      return oDate < cutoffDate;
+    }).map(o => o.order_id);
+    if (legacyIds.length > 0) {
+      await supabase.from('orders').delete().in('order_id', legacyIds);
+      deletedOrders += legacyIds.length;
+    }
+  } catch(e) { console.error('Delete orders error:', e.message); }
+
+  // Delete old khata transactions (ISO timestamps — single batch)
   let deletedKhata = 0;
   try {
     const cutoffTS = cutoffISO + 'T00:00:00.000Z';
     const { count } = await supabase.from('khata_transactions')
-      .select('id', { count: 'exact', head: true })
-      .lt('created_at', cutoffTS);
-    deletedKhata = count || 0;
-
-    if (deletedKhata > 0) {
-      const { error } = await supabase.from('khata_transactions').delete().lt('created_at', cutoffTS);
-      if (error) console.error('Khata delete error:', error.message);
+      .select('id', { count: 'exact', head: true }).lt('created_at', cutoffTS);
+    if ((count || 0) > 0) {
+      await supabase.from('khata_transactions').delete().lt('created_at', cutoffTS);
+      deletedKhata = count;
     }
   } catch(e) { console.error('Delete khata error:', e.message); }
 
@@ -1003,23 +1032,34 @@ async function deleteOldData(data) {
 //--------------------------------------------------------------------------------------------------------------------------------
 async function getAnalytics() {
   const ist = getIST();
-  const today = istDateISO(ist);
-  // Get first day of current month
-  const monthStart = `${ist.getUTCFullYear()}-${String(ist.getUTCMonth()+1).padStart(2,'0')}-01`;
+  const todayISO    = istDateISO(ist);    // "YYYY-MM-DD"
+  const todayLegacy = istDateStr(ist);    // "DD/MM/YYYY"
+  const monthStart  = `${ist.getUTCFullYear()}-${String(ist.getUTCMonth()+1).padStart(2,'0')}-01`;
+  // Legacy month start for old data (orders stored as DD/MM/YYYY won't match gte monthStart)
+  const thisMonthNum = ist.getUTCMonth() + 1;
+  const thisYear     = ist.getUTCFullYear();
 
-  // Parallel fetches — only fetch what's needed
-  const [todayRes, monthRes, totalRes, usersRes, subsRes, walletsRes] = await Promise.all([
-    supabase.from('orders').select('final_amount,order_status').eq('order_date', today),
-    supabase.from('orders').select('final_amount').gte('order_date', monthStart).neq('order_status','rejected'),
+  const [todayISORes, todayLegRes, monthRes, totalRes, usersRes, subsRes, walletsRes] = await Promise.all([
+    supabase.from('orders').select('final_amount,order_status').eq('order_date', todayISO),
+    supabase.from('orders').select('final_amount,order_status').eq('order_date', todayLegacy),
+    supabase.from('orders').select('final_amount,order_date').gte('order_date', monthStart).neq('order_status','rejected'),
     supabase.from('orders').select('order_id', { count: 'exact', head: true }),
     supabase.from('users').select('user_id', { count: 'exact', head: true }),
     supabase.from('subscribers').select('phone', { count: 'exact', head: true }),
     supabase.from('wallet').select('balance')
   ]);
 
-  const todayOrders = (todayRes.data || []).filter(o => o.order_status !== 'rejected');
+  // Combine ISO + legacy today results, deduplicated by status check
+  const todayOrders = [
+    ...(todayISORes.data || []),
+    ...(todayLegRes.data || [])
+  ].filter(o => o.order_status !== 'rejected');
+
   const todayRevenue = todayOrders.reduce((s, o) => s + (Number(o.final_amount) || 0), 0);
+
+  // Monthly: gte on ISO dates gets new orders; also scan legacy for this month/year
   const monthlyRevenue = (monthRes.data || []).reduce((s, o) => s + (Number(o.final_amount) || 0), 0);
+
   const totalWallet = (walletsRes.data || []).reduce((s, w) => s + (Number(w.balance) || 0), 0);
 
   return {
