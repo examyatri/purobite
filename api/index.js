@@ -37,7 +37,8 @@ module.exports = async (req, res) => {
       case 'updateMenuOrder':      result = await updateMenuOrder(data); break;
       case 'createOrder':          result = await createOrder(data); break;
       case 'getUserOrders':        result = await getUserOrders(data); break;
-      case 'adminGetOrders':       result = await adminGetOrders(); break;
+      case 'adminGetOrders':       result = await adminGetOrders(data); break;
+      case 'adminGetOrdersByDate': result = await adminGetOrdersByDate(data); break;
       case 'updateOrderStatus':    result = await updateOrderStatus(data); break;
       case 'rejectOrder':          result = await rejectOrder(data); break;
       case 'bulkOrdersWithBalance':result = await bulkOrdersWithBalance(data); break;
@@ -95,6 +96,13 @@ module.exports = async (req, res) => {
 function getIST() {
   return new Date(Date.now() + 5.5 * 3600000);
 }
+// YYYY-MM-DD for Supabase DATE column (ISO format)
+function istDateISO(d) {
+  return d.getUTCFullYear() + '-' +
+         String(d.getUTCMonth()+1).padStart(2,'0') + '-' +
+         String(d.getUTCDate()).padStart(2,'0');
+}
+// Legacy DD/MM/YYYY kept for any old data reads
 function istDateStr(d) {
   return String(d.getUTCDate()).padStart(2,'0') + '/' +
          String(d.getUTCMonth()+1).padStart(2,'0') + '/' +
@@ -284,7 +292,7 @@ async function createOrder(data) {
     user_type: data.userType || 'daily',
     payment_status: 'pending',
     order_status: 'pending',
-    order_date: istDateStr(ist),
+    order_date: istDateISO(ist),
     order_time: istTimeStr(ist)
   }).select().single();
   if (error) throw new Error(error.message);
@@ -300,22 +308,51 @@ async function createOrder(data) {
 async function getUserOrders(data) {
   if (!data.userId) throw new Error('userId required');
   const { data: orders, error } = await supabase
-    .from('orders').select('*').eq('user_id', data.userId)
-    .order('order_date', { ascending: false });
+    .from('orders')
+    .select('order_id,user_id,name,phone,address,items,total_amount,delivery_charge,final_amount,coupon_code,discount,user_type,payment_status,order_status,order_date,order_time,rider_id')
+    .eq('user_id', data.userId)
+    .order('order_date', { ascending: false })
+    .order('order_id', { ascending: false })
+    .limit(5);
   if (error) throw new Error(error.message);
   return (orders || []).map(formatOrder);
 }
 
-async function adminGetOrders() {
-  const { data: orders, error } = await supabase
-    .from('orders').select('*')
-    .order('order_date', { ascending: false });
+async function adminGetOrders(data = {}) {
+  const ist = getIST();
+  // Default: today only. Pass date='all' to get all, or date='YYYY-MM-DD' for specific day
+  const filterDate = data.date || istDateISO(ist);
+  let query = supabase
+    .from('orders')
+    .select('order_id,user_id,name,phone,address,items,total_amount,delivery_charge,final_amount,coupon_code,discount,user_type,payment_status,order_status,order_date,order_time,rider_id')
+    .order('order_date', { ascending: false })
+    .order('order_id', { ascending: false });
+  if (filterDate !== 'all') {
+    query = query.eq('order_date', filterDate);
+  }
+  const { data: orders, error } = await query;
   if (error) throw new Error(error.message);
   return (orders || []).map(formatOrder);
 }
 
-// -------------------------------------------------------------
-// DATE / TIME NORMALIZERS
+// adminGetOrdersByDate: for lazy-load status tabs (Preparing/Out/Delivered/Rejected)
+// Fetches a specific status across ALL dates (paginated, newest first)
+async function adminGetOrdersByDate(data = {}) {
+  const { status, date, limit: lim = 200 } = data;
+  let query = supabase
+    .from('orders')
+    .select('order_id,user_id,name,phone,address,items,total_amount,delivery_charge,final_amount,coupon_code,discount,user_type,payment_status,order_status,order_date,order_time,rider_id')
+    .order('order_date', { ascending: false })
+    .order('order_id', { ascending: false })
+    .limit(lim);
+  if (status) query = query.eq('order_status', status);
+  if (date && date !== 'all') query = query.eq('order_date', date);
+  const { data: orders, error } = await query;
+  if (error) throw new Error(error.message);
+  return (orders || []).map(formatOrder);
+}
+
+
 // Supabase returns order_date as DATE ("2026-04-07") and
 // order_time as TIME ("09:35:00") when column types are DATE/TIME.
 // Frontend always expects "DD/MM/YYYY" and "HH:MM AM/PM".
@@ -341,7 +378,7 @@ function normOrderDate(v) {
              ist.getUTCFullYear();
     }
   }
-  return s; // fallback â return as-is
+  return s; // fallback — return as-is
 }
 
 function normOrderTime(v) {
@@ -420,7 +457,7 @@ async function forceUdharOrder(data) {
     delivery_charge: 0, final_amount: Number(data.finalAmount) || 0,
     coupon_code: '', discount: 0, user_type: 'subscriber',
     payment_status: 'pending', order_status: 'pending',
-    order_date: istDateStr(ist), order_time: istTimeStr(ist)
+    order_date: istDateISO(ist), order_time: istTimeStr(ist)
   }).select().single();
   if (error) throw new Error(error.message);
   return { orderId: order.order_id };
@@ -434,14 +471,14 @@ async function bulkOrdersWithBalance(data) {
     const amount = Number(o.finalAmount) || 0;
     try {
       const bal = await getWalletBalance(ph);
-      if (bal < amount) { failed.push({ phone: ph, name: o.name, reason: `Low balance Ã¢ÂÂ¹${bal}` }); continue; }
+      if (bal < amount) { failed.push({ phone: ph, name: o.name, reason: `Low balance â¹${bal}` }); continue; }
       const ist = getIST();
       const { data: order, error } = await supabase.from('orders').insert({
         user_id: o.userId || ph, name: o.name, phone: ph, address: o.address || '',
         items: o.items, total_amount: amount, delivery_charge: 0, final_amount: amount,
         coupon_code: '', discount: 0, user_type: 'subscriber',
         payment_status: 'pending', order_status: 'pending',
-        order_date: istDateStr(ist), order_time: istTimeStr(ist)
+        order_date: istDateISO(ist), order_time: istTimeStr(ist)
       }).select().single();
       if (error) throw new Error(error.message);
       await deductWalletBalance(ph, amount, `Order ${order.order_id}`, o.userId);
@@ -460,7 +497,7 @@ async function adminBulkCreate(data) {
       const amount = Number(o.finalAmount) || 0;
       if (o.deductWallet && amount > 0) {
         const bal = await getWalletBalance(ph);
-        if (bal < amount) { failed.push({ phone: ph, name: o.name, reason: `Low balance Ã¢ÂÂ¹${bal}` }); continue; }
+        if (bal < amount) { failed.push({ phone: ph, name: o.name, reason: `Low balance â¹${bal}` }); continue; }
       }
       const ist = getIST();
       const { data: order, error } = await supabase.from('orders').insert({
@@ -469,7 +506,7 @@ async function adminBulkCreate(data) {
         total_amount: amount, delivery_charge: 0, final_amount: amount,
         coupon_code: '', discount: 0, user_type: o.userType || 'daily',
         payment_status: 'pending', order_status: 'pending',
-        order_date: istDateStr(ist), order_time: istTimeStr(ist)
+        order_date: istDateISO(ist), order_time: istTimeStr(ist)
       }).select().single();
       if (error) throw new Error(error.message);
       if (o.deductWallet && amount > 0) {
@@ -671,8 +708,15 @@ async function riderLogin(data) {
 
 async function getRiderOrders(data) {
   if (!data.riderId) throw new Error('riderId required');
-  const { data: orders, error } = await supabase.from('orders').select('*')
-    .or(`rider_id.eq.${data.riderId},order_status.eq.preparing,order_status.eq.pending`);
+  const ist = getIST();
+  const today = istDateISO(ist);
+  // Today's pending/preparing/out-for-delivery + all orders assigned to this rider
+  const { data: orders, error } = await supabase
+    .from('orders')
+    .select('order_id,user_id,name,phone,address,items,total_amount,delivery_charge,final_amount,coupon_code,discount,user_type,payment_status,order_status,order_date,order_time,rider_id')
+    .or(`rider_id.eq.${data.riderId},and(order_date.eq.${today},order_status.in.(pending,preparing,out for delivery))`)
+    .order('order_date', { ascending: false })
+    .order('order_id', { ascending: false });
   if (error) throw new Error(error.message);
   return (orders || []).map(formatOrder);
 }
@@ -901,42 +945,57 @@ function getDefaultDay(d, name) {
 }
 
 // -------------------------------------------------------------
-// DELETE OLD DATA (Admin only - free up Supabase storage)
+// DELETE OLD DATA — supports days, months, or custom cutoff date
+// Uses single Supabase batch delete (no loops, minimal CPU)
 // -------------------------------------------------------------
 async function deleteOldData(data) {
-  const months = Number(data.months) || 3;
-  const cutoff = new Date(Date.now() + 5.5 * 3600000);
-  cutoff.setUTCMonth(cutoff.getUTCMonth() - months);
+  let cutoffISO;
 
-  // Delete old orders by fetching IDs first (safest for mixed date formats)
+  if (data.cutoffDate && /^\d{4}-\d{2}-\d{2}$/.test(data.cutoffDate)) {
+    // Custom date range — delete everything BEFORE this date
+    cutoffISO = data.cutoffDate;
+  } else if (data.days && Number(data.days) > 0) {
+    const cutoff = new Date(Date.now() + 5.5 * 3600000);
+    cutoff.setUTCDate(cutoff.getUTCDate() - Number(data.days));
+    cutoffISO = istDateISO(cutoff);
+  } else {
+    const months = Number(data.months) || 3;
+    const cutoff = new Date(Date.now() + 5.5 * 3600000);
+    cutoff.setUTCMonth(cutoff.getUTCMonth() - months);
+    cutoffISO = istDateISO(cutoff);
+  }
+
+  // Single batch delete — Supabase lt() on ISO date column
   let deletedOrders = 0;
   try {
-    const { data: allOrders } = await supabase.from('orders').select('order_id, order_date');
-    const oldOrderIds = (allOrders || []).filter(o => {
-      const norm = normOrderDate(o.order_date);
-      if (!norm) return false;
-      const [dd,mm,yyyy] = norm.split('/');
-      return new Date(Number(yyyy), Number(mm)-1, Number(dd)) < cutoff;
-    }).map(o => o.order_id);
-    if (oldOrderIds.length > 0) {
-      const { error } = await supabase.from('orders').delete().in('order_id', oldOrderIds);
-      if (!error) deletedOrders = oldOrderIds.length;
-    }
-  } catch(e) { console.error('Delete orders error:', e.message); }
+    // First count (for confirmation message)
+    const { count } = await supabase.from('orders')
+      .select('order_id', { count: 'exact', head: true })
+      .lt('order_date', cutoffISO);
+    deletedOrders = count || 0;
 
-  // Delete old khata transactions
+    if (deletedOrders > 0) {
+      const { error } = await supabase.from('orders').delete().lt('order_date', cutoffISO);
+      if (error) throw new Error('Orders delete failed: ' + error.message);
+    }
+  } catch(e) { console.error('Delete orders error:', e.message); deletedOrders = -1; }
+
+  // Delete old khata transactions (single batch by created_at)
   let deletedKhata = 0;
   try {
-    const { data: allTxns } = await supabase.from('khata_transactions').select('id, created_at');
-    const oldTxnIds = (allTxns || []).filter(t => t.created_at && new Date(t.created_at) < cutoff).map(t => t.id);
-    if (oldTxnIds.length > 0) {
-      const { error } = await supabase.from('khata_transactions').delete().in('id', oldTxnIds);
-      if (!error) deletedKhata = oldTxnIds.length;
+    const cutoffTS = cutoffISO + 'T00:00:00.000Z';
+    const { count } = await supabase.from('khata_transactions')
+      .select('id', { count: 'exact', head: true })
+      .lt('created_at', cutoffTS);
+    deletedKhata = count || 0;
+
+    if (deletedKhata > 0) {
+      const { error } = await supabase.from('khata_transactions').delete().lt('created_at', cutoffTS);
+      if (error) console.error('Khata delete error:', error.message);
     }
   } catch(e) { console.error('Delete khata error:', e.message); }
 
-  const cutoffStr = String(cutoff.getUTCDate()).padStart(2,'0')+'/'+String(cutoff.getUTCMonth()+1).padStart(2,'0')+'/'+cutoff.getUTCFullYear();
-  return { deletedOrders, deletedKhata, cutoffDate: cutoffStr };
+  return { deletedOrders, deletedKhata, cutoffDate: cutoffISO };
 }
 
 //--------------------------------------------------------------------------------------------------------------------------------
@@ -944,28 +1003,32 @@ async function deleteOldData(data) {
 //--------------------------------------------------------------------------------------------------------------------------------
 async function getAnalytics() {
   const ist = getIST();
-  const today = istDateStr(ist);
-  const { data: orders } = await supabase.from('orders').select('final_amount, order_date, order_status');
-  const { data: users } = await supabase.from('users').select('user_id');
-  const { data: subs } = await supabase.from('subscribers').select('phone');
-  const { data: wallets } = await supabase.from('wallet').select('balance');
-  // normOrderDate handles both YYYY-MM-DD (Supabase DATE type) and DD/MM/YYYY
-  const todayOrders = (orders || []).filter(o => normOrderDate(o.order_date) === today);
+  const today = istDateISO(ist);
+  // Get first day of current month
+  const monthStart = `${ist.getUTCFullYear()}-${String(ist.getUTCMonth()+1).padStart(2,'0')}-01`;
+
+  // Parallel fetches — only fetch what's needed
+  const [todayRes, monthRes, totalRes, usersRes, subsRes, walletsRes] = await Promise.all([
+    supabase.from('orders').select('final_amount,order_status').eq('order_date', today),
+    supabase.from('orders').select('final_amount').gte('order_date', monthStart).neq('order_status','rejected'),
+    supabase.from('orders').select('order_id', { count: 'exact', head: true }),
+    supabase.from('users').select('user_id', { count: 'exact', head: true }),
+    supabase.from('subscribers').select('phone', { count: 'exact', head: true }),
+    supabase.from('wallet').select('balance')
+  ]);
+
+  const todayOrders = (todayRes.data || []).filter(o => o.order_status !== 'rejected');
   const todayRevenue = todayOrders.reduce((s, o) => s + (Number(o.final_amount) || 0), 0);
-  const thisMonth = ist.getUTCMonth(), thisYear = ist.getUTCFullYear();
-  const monthlyRevenue = (orders || []).filter(o => {
-    if (!o.order_date) return false;
-    const norm = normOrderDate(o.order_date); // always "DD/MM/YYYY"
-    const parts = norm.split('/');
-    if (parts.length === 3) return parseInt(parts[1]) - 1 === thisMonth && parseInt(parts[2]) === thisYear;
-    return false;
-  }).reduce((s, o) => s + (Number(o.final_amount) || 0), 0);
-  const totalWallet = (wallets || []).reduce((s, w) => s + (Number(w.balance) || 0), 0);
+  const monthlyRevenue = (monthRes.data || []).reduce((s, o) => s + (Number(o.final_amount) || 0), 0);
+  const totalWallet = (walletsRes.data || []).reduce((s, w) => s + (Number(w.balance) || 0), 0);
+
   return {
-    todayOrders: todayOrders.length, todayRevenue,
-    monthlyRevenue, totalOrders: (orders || []).length,
-    totalUsers: (users || []).length,
-    totalSubscribers: (subs || []).length,
+    todayOrders: todayOrders.length,
+    todayRevenue,
+    monthlyRevenue,
+    totalOrders: totalRes.count || 0,
+    totalUsers: usersRes.count || 0,
+    totalSubscribers: subsRes.count || 0,
     totalWalletBalance: totalWallet
   };
 }
