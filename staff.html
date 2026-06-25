@@ -1,0 +1,754 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"/>
+<meta name="apple-mobile-web-app-capable" content="yes"/>
+<meta name="theme-color" content="#0d1117"/>
+<title>Tiffo Kitchen</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet"/>
+<style>
+:root {
+  --bg:      #0d1117;
+  --bg2:     #161b22;
+  --bg3:     #1c2128;
+  --bg4:     #22272e;
+  --border:  #2d333b;
+  --border2: #373e47;
+  --text:    #e6edf3;
+  --muted:   #7d8590;
+  --green:   #3fb950;
+  --green2:  #238636;
+  --amber:   #d29922;
+  --amber2:  #bb8009;
+  --red:     #f85149;
+  --blue:    #388bfd;
+  --orange:  #f0883e;
+}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
+html{-webkit-text-size-adjust:100%;text-size-adjust:100%;}
+body{background:var(--bg);color:var(--text);font-family:'Inter',sans-serif;min-height:100vh;min-height:100dvh;font-size:15px;line-height:1.5;overflow-x:hidden;}
+
+/* ── SCREENS ── */
+.screen{display:none;min-height:100vh;min-height:100dvh;}
+.screen.active{display:flex;flex-direction:column;}
+
+/* ── TOP BAR ── */
+.topbar{background:var(--bg2);border-bottom:1px solid var(--border);padding:14px 18px;display:flex;align-items:center;justify-content:space-between;gap:10px;position:sticky;top:0;z-index:50;}
+.topbar-brand{display:flex;align-items:center;gap:10px;}
+.topbar-brand .logo{font-size:26px;line-height:1;}
+.topbar-brand .brand-text .name{font-size:17px;font-weight:800;color:#fff;letter-spacing:-0.3px;}
+.topbar-brand .brand-text .sub{font-size:11px;color:var(--muted);font-weight:500;}
+.topbar-right{display:flex;align-items:center;gap:8px;}
+.staff-badge{background:var(--bg4);border:1px solid var(--border2);border-radius:20px;padding:5px 12px;font-size:12px;font-weight:600;color:var(--text);}
+.btn-logout{background:transparent;border:1px solid var(--border2);color:var(--muted);border-radius:8px;padding:6px 12px;font-size:12px;font-weight:600;cursor:pointer;font-family:'Inter',sans-serif;-webkit-tap-highlight-color:transparent;}
+
+/* ── PAGE CONTENT ── */
+.page-content{flex:1;padding:20px 18px;max-width:500px;margin:0 auto;width:100%;}
+
+/* ── LOGIN SCREEN ── */
+.login-wrap{display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:100vh;padding:24px 18px;}
+.login-logo{font-size:56px;margin-bottom:12px;text-align:center;}
+.login-title{font-size:26px;font-weight:800;color:#fff;text-align:center;letter-spacing:-0.5px;margin-bottom:4px;}
+.login-sub{font-size:14px;color:var(--muted);text-align:center;margin-bottom:32px;}
+.login-card{background:var(--bg2);border:1px solid var(--border);border-radius:16px;padding:24px;width:100%;max-width:360px;}
+.login-label{font-size:12px;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:8px;display:block;}
+.staff-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:20px;}
+.staff-btn{background:var(--bg3);border:2px solid var(--border);border-radius:10px;padding:12px 8px;font-size:14px;font-weight:600;color:var(--text);cursor:pointer;text-align:center;transition:all 0.15s;-webkit-tap-highlight-color:transparent;font-family:'Inter',sans-serif;}
+.staff-btn:hover,.staff-btn.selected{background:rgba(63,185,80,0.1);border-color:var(--green);color:var(--green);}
+.pin-wrap{margin-bottom:20px;}
+.pin-inp{width:100%;background:var(--bg4);border:1px solid var(--border2);border-radius:10px;color:var(--text);padding:14px 16px;font-size:22px;font-family:'Inter',sans-serif;font-weight:700;outline:none;text-align:center;letter-spacing:8px;-webkit-appearance:none;}
+.pin-inp:focus{border-color:var(--green);}
+.btn-login{width:100%;background:var(--green);color:#000;border:none;border-radius:10px;padding:16px;font-size:16px;font-weight:800;cursor:pointer;font-family:'Inter',sans-serif;-webkit-tap-highlight-color:transparent;transition:opacity 0.15s;}
+.btn-login:hover{opacity:0.9;}
+.login-error{color:var(--red);font-size:13px;text-align:center;margin-top:12px;font-weight:500;}
+
+/* ── HOME SCREEN ── */
+.home-date{font-size:13px;color:var(--muted);font-weight:500;margin-bottom:20px;}
+.home-date span{color:var(--text);font-weight:600;}
+.action-list{display:flex;flex-direction:column;gap:12px;}
+.action-card{background:var(--bg2);border:1.5px solid var(--border);border-radius:14px;padding:18px 18px;display:flex;align-items:center;gap:16px;cursor:pointer;transition:all 0.18s;-webkit-tap-highlight-color:transparent;position:relative;overflow:hidden;}
+.action-card:active{transform:scale(0.98);}
+.action-card.done{border-color:var(--green2);background:rgba(63,185,80,0.06);}
+.action-card.locked-card{opacity:0.45;cursor:not-allowed;}
+.action-card.pending{border-color:var(--amber2);background:rgba(210,153,34,0.06);}
+.action-icon{font-size:28px;flex-shrink:0;width:44px;text-align:center;}
+.action-info{flex:1;}
+.action-title{font-size:16px;font-weight:700;color:#fff;margin-bottom:3px;}
+.action-sub{font-size:12px;color:var(--muted);font-weight:500;}
+.action-status{flex-shrink:0;}
+.status-pill{font-size:11px;font-weight:700;border-radius:20px;padding:4px 10px;text-transform:uppercase;letter-spacing:0.4px;}
+.pill-done{background:rgba(63,185,80,0.15);color:var(--green);border:1px solid rgba(63,185,80,0.3);}
+.pill-pending{background:rgba(210,153,34,0.15);color:var(--amber);border:1px solid rgba(210,153,34,0.3);}
+.pill-locked{background:var(--bg4);color:var(--muted);border:1px solid var(--border);}
+
+/* ── ENTRY FORM ── */
+.entry-header{margin-bottom:20px;}
+.entry-title{font-size:20px;font-weight:800;color:#fff;letter-spacing:-0.3px;margin-bottom:4px;}
+.entry-sub{font-size:13px;color:var(--muted);}
+.entry-note{background:rgba(56,139,253,0.1);border:1px solid rgba(56,139,253,0.25);border-radius:10px;padding:10px 14px;font-size:12px;color:var(--blue);margin-bottom:18px;font-weight:500;}
+
+.item-list{display:flex;flex-direction:column;gap:10px;margin-bottom:24px;}
+.item-row{background:var(--bg2);border:1px solid var(--border);border-radius:12px;padding:14px 16px;display:flex;align-items:center;gap:12px;}
+.item-row.highlight{border-color:var(--border2);}
+.item-name{flex:1;}
+.item-label{font-size:14px;font-weight:600;color:var(--text);}
+.item-hint{font-size:11px;color:var(--muted);margin-top:2px;}
+.item-input-wrap{display:flex;align-items:center;gap:6px;flex-shrink:0;}
+.item-inp{width:80px;background:var(--bg4);border:1.5px solid var(--border2);border-radius:8px;color:var(--text);padding:10px 8px;font-size:16px;font-family:'Inter',sans-serif;font-weight:700;outline:none;text-align:center;-webkit-appearance:none;-moz-appearance:textfield;}
+.item-inp::-webkit-outer-spin-button,.item-inp::-webkit-inner-spin-button{-webkit-appearance:none;}
+.item-inp:focus{border-color:var(--green);}
+.item-unit{font-size:12px;color:var(--muted);font-weight:600;min-width:28px;}
+
+/* ── REVIEW SCREEN ── */
+.review-list{display:flex;flex-direction:column;gap:8px;margin-bottom:24px;}
+.review-row{display:flex;justify-content:space-between;align-items:center;padding:12px 16px;background:var(--bg2);border-radius:10px;border:1px solid var(--border);}
+.review-row.nonzero{border-color:var(--border2);}
+.review-name{font-size:14px;font-weight:600;}
+.review-val{font-size:14px;font-weight:700;color:var(--green);font-family:'Inter',monospace;}
+.review-val.zero{color:var(--muted);font-weight:500;}
+
+/* ── SUCCESS SCREEN ── */
+.success-wrap{display:flex;flex-direction:column;align-items:center;justify-content:center;flex:1;padding:32px 24px;text-align:center;}
+.success-icon{font-size:72px;margin-bottom:20px;animation:popIn 0.4s ease;}
+@keyframes popIn{0%{transform:scale(0.5);opacity:0;}80%{transform:scale(1.1);}100%{transform:scale(1);opacity:1;}}
+.success-title{font-size:24px;font-weight:800;color:#fff;margin-bottom:8px;}
+.success-sub{font-size:14px;color:var(--muted);margin-bottom:32px;line-height:1.6;}
+.next-hint{background:rgba(63,185,80,0.08);border:1px solid rgba(63,185,80,0.2);border-radius:12px;padding:14px 18px;font-size:13px;color:var(--green);font-weight:600;margin-bottom:24px;}
+
+/* ── BUTTONS ── */
+.btn-primary{background:var(--green);color:#000;border:none;border-radius:10px;padding:16px;font-size:16px;font-weight:800;cursor:pointer;font-family:'Inter',sans-serif;-webkit-tap-highlight-color:transparent;transition:opacity 0.15s;width:100%;min-height:52px;}
+.btn-primary:hover{opacity:0.9;}
+.btn-primary:disabled{opacity:0.4;cursor:not-allowed;}
+.btn-secondary{background:transparent;color:var(--muted);border:1px solid var(--border2);border-radius:10px;padding:14px;font-size:14px;font-weight:600;cursor:pointer;font-family:'Inter',sans-serif;-webkit-tap-highlight-color:transparent;width:100%;min-height:48px;}
+.btn-back{background:transparent;border:none;color:var(--muted);font-size:14px;font-weight:600;cursor:pointer;font-family:'Inter',sans-serif;display:flex;align-items:center;gap:6px;padding:0;margin-bottom:20px;-webkit-tap-highlight-color:transparent;}
+.btn-row{display:flex;flex-direction:column;gap:10px;}
+
+/* ── LOADING ── */
+.loading-wrap{display:flex;flex-direction:column;align-items:center;justify-content:center;flex:1;gap:16px;color:var(--muted);font-size:14px;font-weight:500;}
+.spinner{width:32px;height:32px;border:3px solid var(--border);border-top-color:var(--green);border-radius:50%;animation:spin 0.8s linear infinite;}
+@keyframes spin{to{transform:rotate(360deg);}}
+
+/* ── TOAST ── */
+.toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%) translateY(80px);background:var(--bg3);border:1px solid var(--border2);border-radius:12px;padding:12px 20px;font-size:13px;font-weight:600;color:var(--text);z-index:1000;transition:transform 0.3s ease;white-space:nowrap;box-shadow:0 8px 32px rgba(0,0,0,0.5);}
+.toast.show{transform:translateX(-50%) translateY(0);}
+.toast.error{border-color:var(--red);color:var(--red);}
+.toast.success{border-color:var(--green);color:var(--green);}
+
+/* ── SECTION LABEL ── */
+.section-label{font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:0.8px;margin-bottom:12px;}
+
+/* ── SWIPE SUBMIT ── */
+.swipe-wrap{position:relative;background:var(--bg4);border:1.5px solid var(--border2);border-radius:12px;height:56px;overflow:hidden;margin-bottom:10px;}
+.swipe-track{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:700;color:var(--muted);letter-spacing:0.5px;pointer-events:none;}
+.swipe-handle{position:absolute;left:4px;top:4px;bottom:4px;width:48px;background:var(--green);border-radius:8px;cursor:grab;display:flex;align-items:center;justify-content:center;font-size:18px;transition:background 0.2s;user-select:none;}
+.swipe-handle:active{cursor:grabbing;}
+
+@media(max-width:380px){
+  .page-content{padding:16px 14px;}
+  .action-card{padding:15px 14px;}
+  .item-inp{width:70px;}
+}
+</style>
+</head>
+<body>
+
+<!-- TOAST -->
+<div class="toast" id="toast"></div>
+
+<!-- ════════════════════════════════════ -->
+<!-- SCREEN 1: LOGIN                     -->
+<!-- ════════════════════════════════════ -->
+<div class="screen active" id="screen-login">
+  <div class="login-wrap">
+    <div class="login-logo">🍱</div>
+    <div class="login-title">Tiffo Kitchen</div>
+    <div class="login-sub">Select your name and enter PIN</div>
+
+    <div class="login-card">
+      <label class="login-label">Your Name</label>
+      <div class="staff-grid" id="staff-grid">
+        <div style="color:var(--muted);font-size:13px;grid-column:1/-1;text-align:center;padding:12px;">Loading staff...</div>
+      </div>
+
+      <div class="pin-wrap">
+        <label class="login-label">PIN</label>
+        <input type="password" inputmode="numeric" maxlength="6" class="pin-inp" id="pin-inp" placeholder="••••" onkeydown="if(event.key==='Enter')doLogin()"/>
+      </div>
+
+      <button class="btn-login" onclick="doLogin()">Enter Kitchen →</button>
+      <div class="login-error" id="login-error" style="display:none;"></div>
+    </div>
+  </div>
+</div>
+
+<!-- ════════════════════════════════════ -->
+<!-- SCREEN 2: HOME                      -->
+<!-- ════════════════════════════════════ -->
+<div class="screen" id="screen-home">
+  <div class="topbar">
+    <div class="topbar-brand">
+      <span class="logo">🍱</span>
+      <div class="brand-text">
+        <div class="name">Tiffo Kitchen</div>
+        <div class="sub">Staff Panel</div>
+      </div>
+    </div>
+    <div class="topbar-right">
+      <div class="staff-badge" id="staff-name-badge">—</div>
+      <button class="btn-logout" onclick="doLogout()">Logout</button>
+    </div>
+  </div>
+
+  <div class="page-content">
+    <div class="home-date">Today: <span id="home-date-label">—</span></div>
+
+    <div class="section-label">What to do now</div>
+    <div class="action-list" id="action-list">
+      <!-- Rendered by JS -->
+    </div>
+  </div>
+</div>
+
+<!-- ════════════════════════════════════ -->
+<!-- SCREEN 3: ENTRY FORM                -->
+<!-- ════════════════════════════════════ -->
+<div class="screen" id="screen-entry">
+  <div class="topbar">
+    <div class="topbar-brand">
+      <span class="logo" id="entry-icon">📦</span>
+      <div class="brand-text">
+        <div class="name" id="entry-screen-title">Stock Entry</div>
+        <div class="sub" id="entry-screen-sub">Enter quantities</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="page-content" id="entry-form-content">
+    <!-- Rendered by JS -->
+  </div>
+</div>
+
+<!-- ════════════════════════════════════ -->
+<!-- SCREEN 4: REVIEW                    -->
+<!-- ════════════════════════════════════ -->
+<div class="screen" id="screen-review">
+  <div class="topbar">
+    <div class="topbar-brand">
+      <span class="logo">✅</span>
+      <div class="brand-text">
+        <div class="name">Review Entry</div>
+        <div class="sub">Check before saving</div>
+      </div>
+    </div>
+  </div>
+  <div class="page-content">
+    <button class="btn-back" onclick="goBack()">← Go Back</button>
+    <div class="section-label" id="review-section-label">Confirm your entry</div>
+    <div class="review-list" id="review-list"></div>
+
+    <div class="btn-row">
+      <div class="swipe-wrap" id="swipe-wrap">
+        <div class="swipe-track">→ Slide to confirm</div>
+        <div class="swipe-handle" id="swipe-handle">→</div>
+      </div>
+      <button class="btn-secondary" onclick="goBack()">Go Back & Edit</button>
+    </div>
+  </div>
+</div>
+
+<!-- ════════════════════════════════════ -->
+<!-- SCREEN 5: SUCCESS                   -->
+<!-- ════════════════════════════════════ -->
+<div class="screen" id="screen-success">
+  <div class="page-content">
+    <div class="success-wrap">
+      <div class="success-icon">✅</div>
+      <div class="success-title" id="success-title">Done!</div>
+      <div class="success-sub" id="success-sub">Entry saved successfully.</div>
+      <div class="next-hint" id="next-hint" style="display:none;"></div>
+      <button class="btn-primary" onclick="goHome()">Back to Home</button>
+    </div>
+  </div>
+</div>
+
+<!-- ════════════════════════════════════ -->
+<!-- LOADING OVERLAY                     -->
+<!-- ════════════════════════════════════ -->
+<div class="screen" id="screen-loading">
+  <div class="loading-wrap">
+    <div class="spinner"></div>
+    <div>Loading...</div>
+  </div>
+</div>
+
+<script>
+// ════════════════════════════════════════════════════════
+// CONFIG — REPLACE THIS WITH YOUR APPS SCRIPT URL
+// ════════════════════════════════════════════════════════
+const API = 'https://script.google.com/macros/s/AKfycbwrkfkIEtKtU3gGmQVzxIPoyi0vvXSwrRBqaKEML3PBYX8Myl1i-Xdi_P7_3Igcaxo/exec';
+
+// ════════════════════════════════════════════════════════
+// STATE
+// ════════════════════════════════════════════════════════
+let state = {
+  staff:       null,   // { name, id }
+  ingredients: [],
+  settings:    {},
+  todayStatus: { purchase: false, morning: false, evening: false, dayClose: false },
+  currentSlot: null,   // 'purchase' | 'morning' | 'evening' | 'dayclose'
+  entryData:   {},     // ingID → qty
+  prevEntries: {},     // ingID → last used qty (from localStorage cache)
+};
+
+const TODAY = new Date().toISOString().slice(0, 10);
+
+// ════════════════════════════════════════════════════════
+// SCREEN MANAGEMENT
+// ════════════════════════════════════════════════════════
+function showScreen(id) {
+  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+  document.getElementById('screen-' + id).classList.add('active');
+}
+
+// ════════════════════════════════════════════════════════
+// API HELPERS
+// ════════════════════════════════════════════════════════
+async function apiGet(params) {
+  const url = API + '?' + new URLSearchParams(params);
+  const res = await fetch(url);
+  return res.json();
+}
+
+async function apiPost(body) {
+  const res = await fetch(API, {
+    method: 'POST',
+    body: JSON.stringify(body),
+  });
+  return res.json();
+}
+
+// ════════════════════════════════════════════════════════
+// INIT
+// ════════════════════════════════════════════════════════
+async function init() {
+  showScreen('loading');
+  try {
+    const [sRes, iRes, settRes] = await Promise.all([
+      apiGet({ action: 'getStaff' }),
+      apiGet({ action: 'getIngredients' }),
+      apiGet({ action: 'getSettings' }),
+    ]);
+    state.ingredients = (iRes.data || []).filter(i => i.Active === 'YES');
+    state.settings    = settRes.data || {};
+
+    // Load prev entries from localStorage
+    state.prevEntries = JSON.parse(localStorage.getItem('tiffo_prev_entries') || '{}');
+
+    renderStaffButtons(sRes.data || []);
+    showScreen('login');
+  } catch(e) {
+    showScreen('login');
+    showToast('Connection error. Check your network.', 'error');
+  }
+}
+
+// ════════════════════════════════════════════════════════
+// LOGIN
+// ════════════════════════════════════════════════════════
+function renderStaffButtons(staffList) {
+  const grid = document.getElementById('staff-grid');
+  if (!staffList.length) {
+    grid.innerHTML = '<div style="color:var(--muted);font-size:13px;grid-column:1/-1;text-align:center;padding:12px;">No staff found. Contact owner.</div>';
+    return;
+  }
+  grid.innerHTML = staffList.map(s => `
+    <button class="staff-btn" onclick="selectStaff('${s.Name}','${s.ID}',this)">${s.Name}</button>
+  `).join('');
+}
+
+let selectedStaffName = null, selectedStaffId = null;
+function selectStaff(name, id, btn) {
+  selectedStaffName = name;
+  selectedStaffId   = id;
+  document.querySelectorAll('.staff-btn').forEach(b => b.classList.remove('selected'));
+  btn.classList.add('selected');
+  document.getElementById('pin-inp').focus();
+}
+
+async function doLogin() {
+  const pin = document.getElementById('pin-inp').value.trim();
+  const errEl = document.getElementById('login-error');
+  errEl.style.display = 'none';
+
+  if (!selectedStaffName) { errEl.textContent = 'Please select your name first.'; errEl.style.display = 'block'; return; }
+  if (!pin) { errEl.textContent = 'Please enter your PIN.'; errEl.style.display = 'block'; return; }
+
+  try {
+    const res = await apiGet({ action: 'verifyStaff', name: selectedStaffName, pin });
+    if (res.success) {
+      state.staff = { name: selectedStaffName, id: selectedStaffId };
+      document.getElementById('staff-name-badge').textContent = selectedStaffName;
+      await loadHome();
+    } else {
+      errEl.textContent = 'Wrong PIN. Try again.';
+      errEl.style.display = 'block';
+      document.getElementById('pin-inp').value = '';
+      document.getElementById('pin-inp').focus();
+    }
+  } catch(e) {
+    errEl.textContent = 'Error connecting. Try again.';
+    errEl.style.display = 'block';
+  }
+}
+
+function doLogout() {
+  state.staff = null;
+  selectedStaffName = null;
+  selectedStaffId   = null;
+  document.getElementById('pin-inp').value = '';
+  document.querySelectorAll('.staff-btn').forEach(b => b.classList.remove('selected'));
+  document.getElementById('login-error').style.display = 'none';
+  showScreen('login');
+}
+
+// ════════════════════════════════════════════════════════
+// HOME
+// ════════════════════════════════════════════════════════
+async function loadHome() {
+  showScreen('loading');
+  try {
+    const statusRes = await apiGet({ action: 'getTodayStatus', date: TODAY });
+    state.todayStatus = statusRes;
+    const s = state.settings;
+    const now = new Date();
+    const nowMins = now.getHours() * 60 + now.getMinutes();
+
+    function timeMins(t) {
+      if (!t) return 0;
+      const [h, m] = t.split(':').map(Number);
+      return h * 60 + (m || 0);
+    }
+
+    const slots = [
+      {
+        id:        'purchase',
+        icon:      '📦',
+        title:     'Stock Arrived',
+        sub:       'Enter what came in today',
+        done:      state.todayStatus.purchase,
+        unlockAt:  timeMins(s.purchase_unlock_time  || '06:00'),
+        unlockLabel: s.purchase_unlock_time || '6:00 AM',
+      },
+      {
+        id:        'morning',
+        icon:      '🌅',
+        title:     'Morning Used',
+        sub:       (s.morning_slot_label || 'Morning Tiffin') + ' — what was used',
+        done:      state.todayStatus.morning,
+        unlockAt:  timeMins(s.morning_unlock_time || '10:00'),
+        unlockLabel: s.morning_unlock_time || '10:00 AM',
+      },
+      {
+        id:        'evening',
+        icon:      '🌙',
+        title:     'Evening Used',
+        sub:       (s.evening_slot_label || 'Evening Tiffin') + ' — what was used',
+        done:      state.todayStatus.evening,
+        unlockAt:  timeMins(s.evening_unlock_time || '17:00'),
+        unlockLabel: s.evening_unlock_time || '5:00 PM',
+      },
+      {
+        id:        'dayclose',
+        icon:      '🔒',
+        title:     'Day Close',
+        sub:       'Count and enter physical stock',
+        done:      state.todayStatus.dayClose,
+        unlockAt:  timeMins(s.dayclose_unlock_time || '21:00'),
+        unlockLabel: s.dayclose_unlock_time || '9:00 PM',
+      },
+    ];
+
+    const dateLabel = now.toLocaleDateString('en-IN', { weekday: 'long', day: 'numeric', month: 'long' });
+    document.getElementById('home-date-label').textContent = dateLabel;
+
+    const list = document.getElementById('action-list');
+    list.innerHTML = slots.map(sl => {
+      const isUnlocked = nowMins >= sl.unlockAt;
+      const isLocked   = !isUnlocked && !sl.done;
+      let cls = 'action-card';
+      let statusHtml = '';
+
+      if (sl.done) {
+        cls += ' done';
+        statusHtml = '<span class="status-pill pill-done">✓ Done</span>';
+      } else if (isLocked) {
+        cls += ' locked-card';
+        statusHtml = `<span class="status-pill pill-locked">🔒 ${sl.unlockLabel}</span>`;
+      } else {
+        cls += ' pending';
+        statusHtml = '<span class="status-pill pill-pending">Pending</span>';
+      }
+
+      const clickable = !sl.done && isUnlocked;
+      return `
+        <div class="${cls}" onclick="${clickable ? `openSlot('${sl.id}')` : ''}">
+          <div class="action-icon">${sl.icon}</div>
+          <div class="action-info">
+            <div class="action-title">${sl.title}</div>
+            <div class="action-sub">${sl.done ? 'Completed today ✓' : sl.sub}</div>
+          </div>
+          <div class="action-status">${statusHtml}</div>
+        </div>
+      `;
+    }).join('');
+
+    showScreen('home');
+  } catch(e) {
+    showToast('Error loading. Try again.', 'error');
+    showScreen('home');
+  }
+}
+
+function goHome() { loadHome(); }
+
+// ════════════════════════════════════════════════════════
+// ENTRY FORM
+// ════════════════════════════════════════════════════════
+const SLOT_CONFIG = {
+  purchase:  { icon: '📦', title: 'Stock Arrived',   sub: 'How much came in today?',     note: 'Enter 0 if nothing came. Leave blank to skip an item.' },
+  morning:   { icon: '🌅', title: 'Morning Used',    sub: 'How much was used for morning tiffin?', note: 'Enter 0 if nothing was used for this item.' },
+  evening:   { icon: '🌙', title: 'Evening Used',    sub: 'How much was used for evening tiffin?', note: 'Enter 0 if nothing was used for this item.' },
+  dayclose:  { icon: '🔒', title: 'Physical Count',  sub: 'Count stock and enter actual amount in hand', note: 'Count every item carefully. This locks today\'s record.' },
+};
+
+function openSlot(slot) {
+  state.currentSlot = slot;
+  state.entryData   = {};
+  const cfg = SLOT_CONFIG[slot];
+
+  document.getElementById('entry-icon').textContent          = cfg.icon;
+  document.getElementById('entry-screen-title').textContent  = cfg.title;
+  document.getElementById('entry-screen-sub').textContent    = cfg.sub;
+
+  // Render form
+  const content = document.getElementById('entry-form-content');
+  const items   = state.ingredients;
+
+  content.innerHTML = `
+    <button class="btn-back" onclick="goHome()">← Back to Home</button>
+    <div class="entry-header">
+      <div class="entry-title">${cfg.icon} ${cfg.title}</div>
+      <div class="entry-sub">${cfg.sub}</div>
+    </div>
+    <div class="entry-note">💡 ${cfg.note}</div>
+    <div class="item-list" id="item-list-inner">
+      ${items.map(item => {
+        const prev = state.prevEntries[slot + '_' + item.ID];
+        return `
+          <div class="item-row highlight">
+            <div class="item-name">
+              <div class="item-label">${item.Name}</div>
+              ${prev !== undefined ? `<div class="item-hint">Last time: ${prev} ${item.Unit}</div>` : ''}
+            </div>
+            <div class="item-input-wrap">
+              <input type="number" inputmode="decimal" min="0" step="0.1"
+                class="item-inp" id="inp_${item.ID}"
+                placeholder="0"
+                value=""
+                oninput="onItemInput('${item.ID}', this.value)"
+              />
+              <span class="item-unit">${item.Unit}</span>
+            </div>
+          </div>
+        `;
+      }).join('')}
+    </div>
+    <div class="btn-row">
+      <button class="btn-primary" onclick="goToReview()">Review & Submit →</button>
+      <button class="btn-secondary" onclick="goHome()">Cancel</button>
+    </div>
+  `;
+
+  showScreen('entry');
+}
+
+function onItemInput(id, val) {
+  state.entryData[id] = val === '' ? null : parseFloat(val);
+}
+
+function goBack() {
+  openSlot(state.currentSlot);
+}
+
+// ════════════════════════════════════════════════════════
+// REVIEW
+// ════════════════════════════════════════════════════════
+function goToReview() {
+  const items     = state.ingredients;
+  const slot      = state.currentSlot;
+  const cfg       = SLOT_CONFIG[slot];
+  const reviewList = document.getElementById('review-list');
+
+  // Build review rows
+  const nonZero = [], zero = [];
+  items.forEach(item => {
+    const val = state.entryData[item.ID];
+    const qty = (val === null || val === undefined || val === '') ? 0 : parseFloat(val);
+    if (qty > 0) nonZero.push({ item, qty });
+    else          zero.push({ item, qty: 0 });
+  });
+
+  document.getElementById('review-section-label').textContent = `${cfg.icon} ${cfg.title} — Review`;
+
+  reviewList.innerHTML = [
+    ...nonZero.map(({ item, qty }) => `
+      <div class="review-row nonzero">
+        <span class="review-name">${item.Name}</span>
+        <span class="review-val">${qty} ${item.Unit}</span>
+      </div>
+    `),
+    nonZero.length > 0 && zero.length > 0 ? '<div style="font-size:11px;color:var(--muted);text-align:center;padding:6px 0;font-weight:600;">— Zero / Not entered —</div>' : '',
+    ...zero.map(({ item }) => `
+      <div class="review-row">
+        <span class="review-name" style="color:var(--muted);">${item.Name}</span>
+        <span class="review-val zero">0 ${item.Unit}</span>
+      </div>
+    `),
+  ].join('');
+
+  initSwipe();
+  showScreen('review');
+}
+
+// ════════════════════════════════════════════════════════
+// SWIPE TO CONFIRM
+// ════════════════════════════════════════════════════════
+function initSwipe() {
+  const wrap   = document.getElementById('swipe-wrap');
+  const handle = document.getElementById('swipe-handle');
+  if (!wrap || !handle) return;
+
+  let isDragging = false, startX = 0, currentX = 0;
+  const maxSlide = wrap.offsetWidth - handle.offsetWidth - 8;
+
+  function onStart(e) {
+    isDragging = true;
+    startX = (e.touches ? e.touches[0].clientX : e.clientX);
+    handle.style.transition = 'none';
+  }
+  function onMove(e) {
+    if (!isDragging) return;
+    const x = (e.touches ? e.touches[0].clientX : e.clientX);
+    currentX = Math.max(0, Math.min(x - startX, maxSlide));
+    handle.style.left = (4 + currentX) + 'px';
+    handle.style.opacity = 0.7 + 0.3 * (currentX / maxSlide);
+  }
+  function onEnd() {
+    if (!isDragging) return;
+    isDragging = false;
+    handle.style.transition = 'left 0.3s ease';
+    if (currentX >= maxSlide * 0.85) {
+      handle.style.left = maxSlide + 4 + 'px';
+      handle.textContent = '✓';
+      setTimeout(submitEntry, 300);
+    } else {
+      handle.style.left = '4px';
+      currentX = 0;
+    }
+  }
+
+  handle.addEventListener('mousedown', onStart);
+  handle.addEventListener('touchstart', onStart, { passive: true });
+  document.addEventListener('mousemove', onMove);
+  document.addEventListener('touchmove', onMove, { passive: true });
+  document.addEventListener('mouseup', onEnd);
+  document.addEventListener('touchend', onEnd);
+}
+
+// ════════════════════════════════════════════════════════
+// SUBMIT
+// ════════════════════════════════════════════════════════
+async function submitEntry() {
+  const slot  = state.currentSlot;
+  const items = state.ingredients;
+
+  const entries = items.map(item => ({
+    id:       item.ID,
+    name:     item.Name,
+    unit:     item.Unit,
+    qty:      state.entryData[item.ID] !== undefined && state.entryData[item.ID] !== null
+                ? parseFloat(state.entryData[item.ID]) : 0,
+    physical: state.entryData[item.ID] !== undefined && state.entryData[item.ID] !== null
+                ? parseFloat(state.entryData[item.ID]) : 0,
+  }));
+
+  const actionMap = {
+    purchase: 'submitPurchase',
+    morning:  'submitMorningUse',
+    evening:  'submitEveningUse',
+    dayclose: 'submitDayClose',
+  };
+
+  try {
+    const res = await apiPost({
+      action:  actionMap[slot],
+      date:    TODAY,
+      staff:   state.staff.name,
+      entries,
+    });
+
+    if (res.success) {
+      // Save to prevEntries cache
+      items.forEach(item => {
+        const val = state.entryData[item.ID];
+        if (val !== undefined && val !== null) {
+          state.prevEntries[slot + '_' + item.ID] = parseFloat(val);
+        }
+      });
+      localStorage.setItem('tiffo_prev_entries', JSON.stringify(state.prevEntries));
+
+      // Show success
+      const cfg = SLOT_CONFIG[slot];
+      const nextHintMap = {
+        purchase: 'Morning entry will unlock at ' + (state.settings.morning_unlock_time || '10:00 AM') + '.',
+        morning:  'Evening entry will unlock at ' + (state.settings.evening_unlock_time || '5:00 PM') + '.',
+        evening:  'Day Close will unlock at ' + (state.settings.dayclose_unlock_time || '9:00 PM') + '.',
+        dayclose: 'All done for today! Good work. 👏',
+      };
+
+      document.getElementById('success-title').textContent = cfg.title + ' Saved!';
+      document.getElementById('success-sub').textContent   = 'Your entry has been recorded successfully.';
+      const nextEl = document.getElementById('next-hint');
+      nextEl.textContent   = '💡 ' + nextHintMap[slot];
+      nextEl.style.display = 'block';
+      showScreen('success');
+    } else {
+      showToast('Error saving. Try again.', 'error');
+      showScreen('review');
+    }
+  } catch(e) {
+    showToast('Network error. Try again.', 'error');
+    showScreen('review');
+  }
+}
+
+// ════════════════════════════════════════════════════════
+// TOAST
+// ════════════════════════════════════════════════════════
+let toastTimer;
+function showToast(msg, type = '') {
+  const t = document.getElementById('toast');
+  t.textContent  = msg;
+  t.className    = 'toast show ' + (type || '');
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => t.classList.remove('show'), 3000);
+}
+
+// ════════════════════════════════════════════════════════
+// START
+// ════════════════════════════════════════════════════════
+init();
+</script>
+</body>
+</html>

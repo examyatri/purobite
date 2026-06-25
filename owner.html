@@ -1,0 +1,1108 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<meta name="theme-color" content="#0d1117"/>
+<title>Tiffo Owner Dashboard</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet"/>
+<style>
+:root{
+  --bg:#0d1117;--bg2:#161b22;--bg3:#1c2128;--bg4:#22272e;
+  --border:#2d333b;--border2:#373e47;
+  --text:#e6edf3;--muted:#7d8590;--muted2:#444c56;
+  --green:#3fb950;--green2:#238636;--green3:rgba(63,185,80,0.12);
+  --amber:#d29922;--amber3:rgba(210,153,34,0.12);
+  --red:#f85149;--red3:rgba(248,81,73,0.12);
+  --blue:#388bfd;--blue3:rgba(56,139,253,0.12);
+  --purple:#a371f7;--teal:#39c5cf;--orange:#f0883e;
+}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
+html{-webkit-text-size-adjust:100%;}
+body{background:var(--bg);color:var(--text);font-family:'Inter',sans-serif;min-height:100vh;font-size:14px;line-height:1.5;}
+.mono{font-family:'JetBrains Mono',monospace;}
+
+/* ── SCREENS ── */
+.screen{display:none;min-height:100vh;}
+.screen.active{display:block;}
+
+/* ── LOGIN ── */
+.login-wrap{display:flex;align-items:center;justify-content:center;min-height:100vh;padding:24px;}
+.login-card{background:var(--bg2);border:1px solid var(--border);border-radius:20px;padding:32px;width:100%;max-width:360px;}
+.login-logo{font-size:48px;text-align:center;margin-bottom:12px;}
+.login-title{font-size:22px;font-weight:800;color:#fff;text-align:center;margin-bottom:4px;}
+.login-sub{font-size:13px;color:var(--muted);text-align:center;margin-bottom:28px;}
+.inp-label{display:block;font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:6px;}
+.inp{width:100%;background:var(--bg4);border:1px solid var(--border2);border-radius:10px;color:var(--text);padding:12px 14px;font-size:15px;font-family:'Inter',sans-serif;outline:none;-webkit-appearance:none;}
+.inp:focus{border-color:var(--green);}
+.form-row{margin-bottom:16px;}
+.btn-primary{background:var(--green);color:#000;border:none;border-radius:10px;padding:14px;font-size:15px;font-weight:800;cursor:pointer;font-family:'Inter',sans-serif;width:100%;transition:opacity 0.15s;-webkit-tap-highlight-color:transparent;}
+.btn-primary:hover{opacity:0.88;}
+.btn-secondary{background:transparent;color:var(--muted);border:1px solid var(--border2);border-radius:10px;padding:12px 16px;font-size:13px;font-weight:600;cursor:pointer;font-family:'Inter',sans-serif;-webkit-tap-highlight-color:transparent;transition:all 0.15s;}
+.btn-secondary:hover{border-color:var(--border2);color:var(--text);}
+.btn-danger{background:transparent;color:var(--red);border:1px solid rgba(248,81,73,0.3);border-radius:8px;padding:8px 14px;font-size:12px;font-weight:700;cursor:pointer;font-family:'Inter',sans-serif;}
+.btn-icon{background:transparent;border:1px solid var(--border2);border-radius:8px;padding:6px 10px;font-size:12px;font-weight:600;cursor:pointer;font-family:'Inter',sans-serif;color:var(--muted);-webkit-tap-highlight-color:transparent;}
+.btn-icon:hover{color:var(--text);border-color:var(--border2);}
+.login-error{color:var(--red);font-size:13px;text-align:center;margin-top:12px;font-weight:500;}
+
+/* ── LAYOUT ── */
+.app-layout{display:flex;min-height:100vh;}
+.sidebar{width:220px;background:var(--bg2);border-right:1px solid var(--border);padding:0;flex-shrink:0;position:fixed;top:0;left:0;height:100vh;z-index:100;display:flex;flex-direction:column;}
+.sidebar-brand{padding:20px 16px 16px;border-bottom:1px solid var(--border);}
+.brand-logo{font-size:28px;margin-bottom:6px;}
+.brand-name{font-size:16px;font-weight:800;color:#fff;}
+.brand-sub{font-size:11px;color:var(--muted);}
+.sidebar-nav{padding:12px 8px;flex:1;overflow-y:auto;}
+.nav-section-label{font-size:10px;font-weight:700;color:var(--muted2);text-transform:uppercase;letter-spacing:0.8px;padding:8px 10px 6px;}
+.nav-item{display:flex;align-items:center;gap:10px;padding:9px 12px;border-radius:8px;cursor:pointer;font-size:13px;font-weight:600;color:var(--muted);transition:all 0.15s;-webkit-tap-highlight-color:transparent;border:none;background:transparent;width:100%;font-family:'Inter',sans-serif;text-align:left;}
+.nav-item:hover{background:var(--bg3);color:var(--text);}
+.nav-item.active{background:var(--green3);color:var(--green);border:1px solid rgba(63,185,80,0.2);}
+.nav-item .nav-icon{font-size:15px;width:20px;text-align:center;}
+.nav-divider{border:none;border-top:1px solid var(--border);margin:8px 8px;}
+.sidebar-bottom{padding:12px 8px;border-top:1px solid var(--border);}
+
+/* Calculations button — special */
+.btn-calc{display:flex;align-items:center;gap:10px;padding:10px 12px;border-radius:8px;cursor:pointer;font-size:13px;font-weight:700;color:var(--purple);background:rgba(163,113,247,0.1);border:1px solid rgba(163,113,247,0.25);width:100%;font-family:'Inter',sans-serif;margin-bottom:8px;transition:all 0.15s;-webkit-tap-highlight-color:transparent;}
+.btn-calc:hover{background:rgba(163,113,247,0.18);}
+.btn-logout-nav{display:flex;align-items:center;gap:10px;padding:9px 12px;border-radius:8px;cursor:pointer;font-size:13px;font-weight:600;color:var(--muted);background:transparent;border:1px solid var(--border2);width:100%;font-family:'Inter',sans-serif;transition:all 0.15s;}
+.btn-logout-nav:hover{color:var(--red);border-color:rgba(248,81,73,0.3);}
+
+/* ── MAIN ── */
+.main-content{margin-left:220px;flex:1;min-height:100vh;}
+.topbar{background:var(--bg2);border-bottom:1px solid var(--border);padding:14px 24px;display:flex;align-items:center;justify-content:space-between;gap:12px;position:sticky;top:0;z-index:50;}
+.topbar-title{font-size:17px;font-weight:800;color:#fff;}
+.topbar-right{display:flex;align-items:center;gap:10px;}
+.date-badge{background:var(--bg4);border:1px solid var(--border2);border-radius:8px;padding:6px 12px;font-size:12px;font-weight:600;color:var(--muted);}
+.page{display:none;padding:24px;}
+.page.active{display:block;}
+
+/* ── ALERT BAR ── */
+.alert-bar{background:rgba(248,81,73,0.1);border:1px solid rgba(248,81,73,0.3);border-radius:10px;padding:12px 16px;margin-bottom:20px;display:flex;align-items:center;gap:10px;font-size:13px;font-weight:600;color:var(--red);}
+.alert-bar.warning{background:rgba(210,153,34,0.1);border-color:rgba(210,153,34,0.3);color:var(--amber);}
+.alert-bar.info{background:rgba(56,139,253,0.08);border-color:rgba(56,139,253,0.25);color:var(--blue);}
+
+/* ── STAT CARDS ── */
+.stat-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:12px;margin-bottom:20px;}
+.stat-card{background:var(--bg2);border:1px solid var(--border);border-radius:12px;padding:16px 18px;}
+.stat-label{font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:8px;}
+.stat-val{font-size:24px;font-weight:800;color:#fff;font-family:'JetBrains Mono',monospace;letter-spacing:-0.5px;line-height:1;}
+.stat-sub{font-size:12px;color:var(--muted);margin-top:4px;}
+
+/* ── SECTION ── */
+.section-title{font-size:17px;font-weight:800;color:#fff;margin-bottom:4px;}
+.section-sub{font-size:13px;color:var(--muted);margin-bottom:20px;}
+
+/* ── CARD ── */
+.card{background:var(--bg2);border:1px solid var(--border);border-radius:12px;padding:18px;}
+.card-title{font-size:12px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:16px;}
+.card + .card{margin-top:14px;}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:14px;}
+
+/* ── TABLE ── */
+.table-wrap{overflow-x:auto;-webkit-overflow-scrolling:touch;}
+table{width:100%;border-collapse:collapse;font-size:13px;min-width:600px;}
+th{text-align:left;padding:9px 12px;color:var(--muted);font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.4px;border-bottom:1px solid var(--border2);white-space:nowrap;}
+td{padding:11px 12px;border-bottom:1px solid var(--border);vertical-align:middle;}
+tr:last-child td{border-bottom:none;}
+tr:hover td{background:var(--bg3);}
+.fw7{font-weight:700;}
+.text-green{color:var(--green);}
+.text-red{color:var(--red);}
+.text-amber{color:var(--amber);}
+.text-muted{color:var(--muted);}
+.text-sm{font-size:12px;}
+
+/* ── BADGE ── */
+.badge{font-size:10px;font-weight:700;letter-spacing:0.4px;border-radius:5px;padding:2px 8px;border:1px solid;}
+.badge-green{background:rgba(63,185,80,0.12);color:var(--green);border-color:rgba(63,185,80,0.3);}
+.badge-red{background:rgba(248,81,73,0.12);color:var(--red);border-color:rgba(248,81,73,0.3);}
+.badge-amber{background:rgba(210,153,34,0.12);color:var(--amber);border-color:rgba(210,153,34,0.3);}
+.badge-muted{background:var(--bg4);color:var(--muted);border-color:var(--border);}
+
+/* ── PROGRESS ── */
+.prog-track{background:var(--border);border-radius:4px;height:5px;overflow:hidden;}
+.prog-fill{height:100%;border-radius:4px;}
+
+/* ── FORM ── */
+.form-row{margin-bottom:14px;}
+.inp-sm{background:var(--bg4);border:1px solid var(--border2);border-radius:8px;color:var(--text);padding:9px 12px;font-size:14px;font-family:'Inter',sans-serif;outline:none;-webkit-appearance:none;}
+.inp-sm:focus{border-color:var(--green);}
+select.inp,select.inp-sm{cursor:pointer;}
+.form-actions{display:flex;gap:8px;margin-top:16px;flex-wrap:wrap;}
+
+/* ── LIST ITEM (settings) ── */
+.list-item{display:flex;align-items:center;gap:10px;padding:12px 0;border-bottom:1px solid var(--border);}
+.list-item:last-child{border-bottom:none;}
+.list-item-info{flex:1;}
+.list-item-name{font-size:14px;font-weight:600;}
+.list-item-sub{font-size:12px;color:var(--muted);}
+.list-item-actions{display:flex;gap:6px;flex-shrink:0;}
+
+/* ── MODAL ── */
+.modal-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,0.8);z-index:1000;align-items:center;justify-content:center;padding:20px;}
+.modal-overlay.open{display:flex;}
+.modal{background:var(--bg3);border:1px solid var(--border2);border-radius:16px;padding:24px;width:100%;max-width:420px;max-height:90vh;overflow-y:auto;box-shadow:0 24px 64px rgba(0,0,0,0.6);}
+.modal-title{font-size:17px;font-weight:800;color:#fff;margin-bottom:20px;}
+
+/* ── DATE PICKER ── */
+.date-nav{display:flex;align-items:center;gap:10px;margin-bottom:20px;flex-wrap:wrap;}
+.date-nav input[type=date]{background:var(--bg4);border:1px solid var(--border2);border-radius:8px;color:var(--text);padding:9px 12px;font-size:14px;font-family:'Inter',sans-serif;outline:none;cursor:pointer;}
+.date-nav input[type=date]:focus{border-color:var(--green);}
+
+/* ── TOAST ── */
+.toast{position:fixed;bottom:24px;right:24px;background:var(--bg3);border:1px solid var(--border2);border-radius:12px;padding:12px 20px;font-size:13px;font-weight:600;color:var(--text);z-index:2000;transform:translateY(80px);opacity:0;transition:all 0.3s ease;box-shadow:0 8px 32px rgba(0,0,0,0.5);}
+.toast.show{transform:translateY(0);opacity:1;}
+.toast.error{border-color:var(--red);color:var(--red);}
+.toast.success{border-color:var(--green);color:var(--green);}
+
+/* ── DIFF INDICATOR ── */
+.diff-positive{color:var(--green);}
+.diff-negative{color:var(--red);}
+.diff-zero{color:var(--muted);}
+
+/* ── SPINNER ── */
+.spinner{width:20px;height:20px;border:2px solid var(--border);border-top-color:var(--green);border-radius:50%;animation:spin 0.8s linear infinite;display:inline-block;}
+@keyframes spin{to{transform:rotate(360deg);}}
+.loading-row td{color:var(--muted);text-align:center;padding:32px;}
+
+/* ── EMPTY STATE ── */
+.empty-state{text-align:center;padding:40px 20px;color:var(--muted);font-size:13px;}
+
+/* ── RESPONSIVE ── */
+@media(max-width:900px){
+  .sidebar{width:200px;}
+  .main-content{margin-left:200px;}
+}
+@media(max-width:700px){
+  .sidebar{display:none;}
+  .main-content{margin-left:0;}
+  .stat-grid{grid-template-columns:1fr 1fr;}
+  .grid2{grid-template-columns:1fr;}
+  .page{padding:16px;}
+}
+</style>
+</head>
+<body>
+
+<!-- TOAST -->
+<div class="toast" id="toast"></div>
+
+<!-- ════════════════════════════════════════════════════════ -->
+<!-- LOGIN SCREEN                                            -->
+<!-- ════════════════════════════════════════════════════════ -->
+<div class="screen active" id="screen-login">
+  <div class="login-wrap">
+    <div class="login-card">
+      <div class="login-logo">🍱</div>
+      <div class="login-title">Tiffo Owner</div>
+      <div class="login-sub">Enter your password to access the dashboard</div>
+      <div class="form-row">
+        <label class="inp-label">Password</label>
+        <input type="password" class="inp" id="owner-pwd-inp" placeholder="Enter password" onkeydown="if(event.key==='Enter')doOwnerLogin()"/>
+      </div>
+      <button class="btn-primary" onclick="doOwnerLogin()">Login →</button>
+      <div class="login-error" id="login-err" style="display:none;"></div>
+    </div>
+  </div>
+</div>
+
+<!-- ════════════════════════════════════════════════════════ -->
+<!-- MAIN APP                                                -->
+<!-- ════════════════════════════════════════════════════════ -->
+<div class="screen" id="screen-app">
+  <div class="app-layout">
+
+    <!-- ── SIDEBAR ── -->
+    <div class="sidebar">
+      <div class="sidebar-brand">
+        <div class="brand-logo">🍱</div>
+        <div class="brand-name">Tiffo Kitchen</div>
+        <div class="brand-sub" id="sidebar-biz-name">Owner Dashboard</div>
+      </div>
+
+      <div class="sidebar-nav">
+        <div class="nav-section-label">Dashboard</div>
+        <button class="nav-item active" onclick="showPage('today')" id="nav-today">
+          <span class="nav-icon">📊</span> Today
+        </button>
+        <button class="nav-item" onclick="showPage('alerts')" id="nav-alerts">
+          <span class="nav-icon">🔔</span> Alerts
+          <span class="badge badge-red" id="alert-count-badge" style="display:none;margin-left:auto;">0</span>
+        </button>
+
+        <div class="nav-section-label" style="margin-top:8px;">Records</div>
+        <button class="nav-item" onclick="showPage('history')" id="nav-history">
+          <span class="nav-icon">📅</span> History
+        </button>
+        <button class="nav-item" onclick="showPage('monthly')" id="nav-monthly">
+          <span class="nav-icon">📈</span> Monthly
+        </button>
+        <button class="nav-item" onclick="showPage('audit')" id="nav-audit">
+          <span class="nav-icon">📋</span> Staff Log
+        </button>
+
+        <div class="nav-section-label" style="margin-top:8px;">Manage</div>
+        <button class="nav-item" onclick="showPage('ingredients')" id="nav-ingredients">
+          <span class="nav-icon">📦</span> Ingredients
+        </button>
+        <button class="nav-item" onclick="showPage('staff')" id="nav-staff">
+          <span class="nav-icon">👨‍🍳</span> Staff
+        </button>
+        <button class="nav-item" onclick="showPage('settings')" id="nav-settings">
+          <span class="nav-icon">⚙️</span> Settings
+        </button>
+      </div>
+
+      <div class="sidebar-bottom">
+        <button class="btn-calc" onclick="openCalculations()">
+          <span>🧮</span> Calculations
+        </button>
+        <button class="btn-logout-nav" onclick="doLogout()">
+          <span>🚪</span> Logout
+        </button>
+      </div>
+    </div>
+
+    <!-- ── MAIN ── -->
+    <div class="main-content">
+      <div class="topbar">
+        <div class="topbar-title" id="topbar-title">Today's Overview</div>
+        <div class="topbar-right">
+          <div class="date-badge" id="topbar-date">—</div>
+        </div>
+      </div>
+
+      <!-- ══ PAGE: TODAY ══ -->
+      <div class="page active" id="page-today">
+        <div id="today-alerts-section"></div>
+        <div class="stat-grid" id="today-stat-grid"></div>
+        <div class="card">
+          <div class="card-title">Today's Stock — Full Breakdown</div>
+          <div class="table-wrap">
+            <table>
+              <thead>
+                <tr>
+                  <th>Item</th>
+                  <th>Unit</th>
+                  <th>Opening</th>
+                  <th>+ Purchased</th>
+                  <th>− Morning</th>
+                  <th>− Evening</th>
+                  <th>= Calc. Closing</th>
+                  <th>Physical Count</th>
+                  <th>Difference</th>
+                  <th>Cost Today</th>
+                  <th>Status</th>
+                </tr>
+              </thead>
+              <tbody id="today-table-body">
+                <tr class="loading-row"><td colspan="11"><div class="spinner"></div> Loading...</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <!-- ══ PAGE: ALERTS ══ -->
+      <div class="page" id="page-alerts">
+        <div class="section-title">Alerts</div>
+        <div class="section-sub">Discrepancies, low stock, and missing entries.</div>
+        <div id="alerts-content"></div>
+      </div>
+
+      <!-- ══ PAGE: HISTORY ══ -->
+      <div class="page" id="page-history">
+        <div class="section-title">History</div>
+        <div class="section-sub">Select a date to see complete records.</div>
+        <div class="date-nav">
+          <input type="date" id="history-date" onchange="loadHistory()" />
+          <button class="btn-secondary" onclick="loadHistory()">Load</button>
+        </div>
+        <div class="card">
+          <div class="card-title" id="history-card-title">Select a date above</div>
+          <div class="table-wrap">
+            <table>
+              <thead>
+                <tr>
+                  <th>Item</th><th>Unit</th><th>Opening</th><th>+Purchased</th><th>−Morning</th><th>−Evening</th><th>=Closing</th><th>Physical</th><th>Diff</th><th>Cost</th>
+                </tr>
+              </thead>
+              <tbody id="history-table-body"><tr><td colspan="10" style="color:var(--muted);text-align:center;padding:24px;">Pick a date to load records</td></tr></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <!-- ══ PAGE: MONTHLY ══ -->
+      <div class="page" id="page-monthly">
+        <div class="section-title">Monthly Summary</div>
+        <div class="section-sub">Total usage and cost per ingredient for the month.</div>
+        <div class="date-nav">
+          <input type="month" id="monthly-month" onchange="loadMonthly()"/>
+          <button class="btn-secondary" onclick="loadMonthly()">Load</button>
+        </div>
+        <div class="stat-grid" id="monthly-stat-grid"></div>
+        <div class="card">
+          <div class="card-title">Item-wise Monthly Breakdown</div>
+          <div class="table-wrap">
+            <table>
+              <thead><tr><th>Item</th><th>Unit</th><th>Total Purchased</th><th>Morning Used</th><th>Evening Used</th><th>Total Used</th><th>Days Active</th><th>Total Cost</th></tr></thead>
+              <tbody id="monthly-table-body"><tr><td colspan="8" style="color:var(--muted);text-align:center;padding:24px;">Select a month above</td></tr></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <!-- ══ PAGE: AUDIT / STAFF LOG ══ -->
+      <div class="page" id="page-audit">
+        <div class="section-title">Staff Activity Log</div>
+        <div class="section-sub">Who entered what and when.</div>
+        <div class="date-nav">
+          <input type="date" id="audit-date" onchange="loadAudit()"/>
+          <button class="btn-secondary" onclick="loadAudit()">Load</button>
+        </div>
+        <div class="card">
+          <div class="table-wrap">
+            <table>
+              <thead><tr><th>Time</th><th>Staff</th><th>Action</th><th>Item</th><th>Notes</th></tr></thead>
+              <tbody id="audit-table-body"><tr><td colspan="5" style="color:var(--muted);text-align:center;padding:24px;">Select a date</td></tr></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <!-- ══ PAGE: INGREDIENTS ══ -->
+      <div class="page" id="page-ingredients">
+        <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:10px;flex-wrap:wrap;margin-bottom:20px;">
+          <div>
+            <div class="section-title">Ingredients</div>
+            <div class="section-sub" style="margin-bottom:0;">Add, edit, or deactivate items. Rate is used for cost calculation.</div>
+          </div>
+          <button class="btn-primary" style="width:auto;padding:10px 18px;" onclick="openIngModal()">+ Add Item</button>
+        </div>
+        <div class="card">
+          <div class="table-wrap">
+            <table>
+              <thead><tr><th>Name</th><th>Unit</th><th>Rate (₹)</th><th>Low Stock Alert</th><th>Sort</th><th>Status</th><th>Actions</th></tr></thead>
+              <tbody id="ing-table-body"><tr class="loading-row"><td colspan="7"><div class="spinner"></div></td></tr></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <!-- ══ PAGE: STAFF ══ -->
+      <div class="page" id="page-staff">
+        <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:10px;flex-wrap:wrap;margin-bottom:20px;">
+          <div>
+            <div class="section-title">Staff Management</div>
+            <div class="section-sub" style="margin-bottom:0;">Add or remove kitchen staff. Each staff member gets a PIN to log in.</div>
+          </div>
+          <button class="btn-primary" style="width:auto;padding:10px 18px;" onclick="openStaffModal()">+ Add Staff</button>
+        </div>
+        <div class="card">
+          <div id="staff-list-content"></div>
+        </div>
+      </div>
+
+      <!-- ══ PAGE: SETTINGS ══ -->
+      <div class="page" id="page-settings">
+        <div class="section-title">Settings</div>
+        <div class="section-sub">All timings, labels, retention, and password — everything owner controls.</div>
+
+        <div class="grid2">
+          <!-- Time Slots -->
+          <div class="card">
+            <div class="card-title">⏰ Entry Unlock Times</div>
+            <div class="form-row"><label class="inp-label">Stock Arrival</label><input class="inp" type="time" id="s-purchase-time"/></div>
+            <div class="form-row"><label class="inp-label">Morning Use</label><input class="inp" type="time" id="s-morning-time"/></div>
+            <div class="form-row"><label class="inp-label">Evening Use</label><input class="inp" type="time" id="s-evening-time"/></div>
+            <div class="form-row"><label class="inp-label">Day Close</label><input class="inp" type="time" id="s-dayclose-time"/></div>
+          </div>
+
+          <!-- General -->
+          <div class="card">
+            <div class="card-title">🏪 General</div>
+            <div class="form-row"><label class="inp-label">Business Name</label><input class="inp" id="s-biz-name"/></div>
+            <div class="form-row"><label class="inp-label">Morning Slot Label</label><input class="inp" id="s-morning-label"/></div>
+            <div class="form-row"><label class="inp-label">Evening Slot Label</label><input class="inp" id="s-evening-label"/></div>
+            <div class="form-row"><label class="inp-label">Data Retention (months)</label><input class="inp" type="number" min="1" max="12" id="s-retention"/></div>
+          </div>
+        </div>
+
+        <!-- Password -->
+        <div class="card">
+          <div class="card-title">🔐 Change Password</div>
+          <div class="grid2">
+            <div class="form-row"><label class="inp-label">Current Password</label><input class="inp" type="password" id="s-cur-pwd"/></div>
+            <div class="form-row"><label class="inp-label">New Password</label><input class="inp" type="password" id="s-new-pwd"/></div>
+          </div>
+          <div class="form-actions">
+            <button class="btn-primary" style="width:auto;padding:10px 20px;" onclick="changePassword()">Change Password</button>
+          </div>
+        </div>
+
+        <div style="margin-top:16px;">
+          <button class="btn-primary" onclick="saveSettings()">Save All Settings</button>
+        </div>
+      </div>
+
+    </div><!-- /main-content -->
+  </div><!-- /app-layout -->
+</div><!-- /screen-app -->
+
+<!-- ════════════════════════════════════ -->
+<!-- MODALS                              -->
+<!-- ════════════════════════════════════ -->
+
+<!-- Ingredient Modal -->
+<div class="modal-overlay" id="ing-modal" onclick="closeModalOnBg(event,'ing-modal')">
+  <div class="modal">
+    <div class="modal-title" id="ing-modal-title">Add Ingredient</div>
+    <input type="hidden" id="ing-modal-id"/>
+    <div class="form-row"><label class="inp-label">Name</label><input class="inp" id="ing-modal-name" placeholder="e.g. Chawal (Rice)"/></div>
+    <div class="form-row"><label class="inp-label">Unit</label>
+      <select class="inp" id="ing-modal-unit">
+        <option>kg</option><option>litre</option><option>pcs</option><option>gram</option><option>ml</option>
+      </select>
+    </div>
+    <div class="form-row"><label class="inp-label">Rate per Unit (₹)</label><input class="inp" type="number" id="ing-modal-rate" placeholder="e.g. 45"/></div>
+    <div class="form-row"><label class="inp-label">Low Stock Alert (below this quantity)</label><input class="inp" type="number" id="ing-modal-threshold" placeholder="e.g. 5"/></div>
+    <div class="form-row"><label class="inp-label">Sort Order (lower = shown first)</label><input class="inp" type="number" id="ing-modal-sort" placeholder="e.g. 1"/></div>
+    <div class="form-actions">
+      <button class="btn-primary" style="flex:1;" onclick="saveIngredient()">Save</button>
+      <button class="btn-secondary" onclick="closeModal('ing-modal')">Cancel</button>
+    </div>
+  </div>
+</div>
+
+<!-- Staff Modal -->
+<div class="modal-overlay" id="staff-modal" onclick="closeModalOnBg(event,'staff-modal')">
+  <div class="modal">
+    <div class="modal-title" id="staff-modal-title">Add Staff</div>
+    <input type="hidden" id="staff-modal-id"/>
+    <div class="form-row"><label class="inp-label">Full Name</label><input class="inp" id="staff-modal-name" placeholder="e.g. Ramesh Kumar"/></div>
+    <div class="form-row"><label class="inp-label">PIN (4-6 digits)</label><input class="inp" type="text" inputmode="numeric" maxlength="6" id="staff-modal-pin" placeholder="e.g. 1234"/></div>
+    <div class="form-actions">
+      <button class="btn-primary" style="flex:1;" onclick="saveStaff()">Save</button>
+      <button class="btn-secondary" onclick="closeModal('staff-modal')">Cancel</button>
+    </div>
+  </div>
+</div>
+
+<!-- Confirm Modal -->
+<div class="modal-overlay" id="confirm-modal">
+  <div class="modal" style="max-width:320px;text-align:center;">
+    <div class="modal-title" id="confirm-msg">Are you sure?</div>
+    <div class="form-actions" style="justify-content:center;">
+      <button class="btn-danger" style="padding:10px 24px;" onclick="confirmYes()">Yes, Delete</button>
+      <button class="btn-secondary" onclick="closeModal('confirm-modal')">Cancel</button>
+    </div>
+  </div>
+</div>
+
+<!-- Calculations Modal (iframe wrapper) -->
+<div class="modal-overlay" id="calc-modal" onclick="closeModalOnBg(event,'calc-modal')" style="padding:0;">
+  <div style="background:var(--bg);border:1px solid var(--border2);border-radius:0;width:100%;max-width:100%;height:100vh;position:relative;">
+    <div style="display:flex;align-items:center;justify-content:space-between;padding:12px 18px;background:var(--bg2);border-bottom:1px solid var(--border);">
+      <span style="font-size:15px;font-weight:800;color:#fff;">🧮 Tiffo Calculations</span>
+      <button onclick="closeModal('calc-modal')" style="background:var(--bg4);border:1px solid var(--border2);color:var(--muted);border-radius:8px;padding:6px 14px;cursor:pointer;font-size:13px;font-weight:600;font-family:'Inter',sans-serif;">✕ Close</button>
+    </div>
+    <iframe id="calc-iframe" src="" style="width:100%;height:calc(100vh - 53px);border:none;"></iframe>
+  </div>
+</div>
+
+<script>
+// ════════════════════════════════════════════════════════
+// CONFIG
+// ════════════════════════════════════════════════════════
+const API = 'https://script.google.com/macros/s/AKfycbwrkfkIEtKtU3gGmQVzxIPoyi0vvXSwrRBqaKEML3PBYX8Myl1i-Xdi_P7_3Igcaxo/exec';
+// Path to your manager HTML file (same folder, or full URL)
+const MANAGER_URL = 'tiffo-manager.html';
+
+// ════════════════════════════════════════════════════════
+// STATE
+// ════════════════════════════════════════════════════════
+let state = {
+  settings:    {},
+  ingredients: [],
+  staff:       [],
+  todayData:   [],
+};
+
+const TODAY = new Date().toISOString().slice(0,10);
+
+// ════════════════════════════════════════════════════════
+// API
+// ════════════════════════════════════════════════════════
+async function apiGet(params) {
+  const res = await fetch(API + '?' + new URLSearchParams(params));
+  return res.json();
+}
+async function apiPost(body) {
+  const res = await fetch(API, { method:'POST', body: JSON.stringify(body) });
+  return res.json();
+}
+
+// ════════════════════════════════════════════════════════
+// SCREEN
+// ════════════════════════════════════════════════════════
+function showScreen(id) {
+  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+  document.getElementById('screen-' + id).classList.add('active');
+}
+
+// ════════════════════════════════════════════════════════
+// LOGIN
+// ════════════════════════════════════════════════════════
+async function doOwnerLogin() {
+  const pwd = document.getElementById('owner-pwd-inp').value.trim();
+  const err = document.getElementById('login-err');
+  err.style.display = 'none';
+  if (!pwd) { err.textContent='Enter password'; err.style.display='block'; return; }
+  try {
+    const res = await apiGet({ action:'verifyOwner', password: pwd });
+    if (res.success) {
+      await initApp();
+    } else {
+      err.textContent = 'Wrong password. Try again.';
+      err.style.display = 'block';
+      document.getElementById('owner-pwd-inp').value = '';
+    }
+  } catch(e) {
+    err.textContent = 'Connection error.';
+    err.style.display = 'block';
+  }
+}
+
+function doLogout() {
+  document.getElementById('owner-pwd-inp').value = '';
+  showScreen('login');
+}
+
+// ════════════════════════════════════════════════════════
+// INIT
+// ════════════════════════════════════════════════════════
+async function initApp() {
+  showScreen('app');
+  const dateLabel = new Date().toLocaleDateString('en-IN', { weekday:'long', day:'numeric', month:'long', year:'numeric' });
+  document.getElementById('topbar-date').textContent = dateLabel;
+
+  // Set today's date defaults
+  document.getElementById('history-date').value = TODAY;
+  document.getElementById('audit-date').value   = TODAY;
+  const ym = TODAY.slice(0,7);
+  document.getElementById('monthly-month').value = ym;
+
+  await Promise.all([
+    loadSettings(),
+    loadIngredients(),
+    loadStaffList(),
+  ]);
+  await loadTodayPage();
+}
+
+// ════════════════════════════════════════════════════════
+// PAGE NAVIGATION
+// ════════════════════════════════════════════════════════
+const PAGE_TITLES = {
+  today:'Today\'s Overview', alerts:'Alerts', history:'History',
+  monthly:'Monthly Summary', audit:'Staff Activity Log',
+  ingredients:'Ingredients', staff:'Staff Management', settings:'Settings',
+};
+
+function showPage(id) {
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+  document.getElementById('page-' + id).classList.add('active');
+  document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+  const nav = document.getElementById('nav-' + id);
+  if (nav) nav.classList.add('active');
+  document.getElementById('topbar-title').textContent = PAGE_TITLES[id] || '';
+
+  // Load on demand
+  if (id === 'history')     loadHistory();
+  if (id === 'audit')       loadAudit();
+  if (id === 'monthly')     loadMonthly();
+  if (id === 'alerts')      loadAlerts();
+  if (id === 'ingredients') renderIngTable();
+  if (id === 'staff')       renderStaffList();
+}
+
+// ════════════════════════════════════════════════════════
+// CALCULATIONS BUTTON
+// ════════════════════════════════════════════════════════
+function openCalculations() {
+  document.getElementById('calc-iframe').src = MANAGER_URL;
+  document.getElementById('calc-modal').classList.add('open');
+}
+
+// ════════════════════════════════════════════════════════
+// TODAY
+// ════════════════════════════════════════════════════════
+async function loadTodayPage() {
+  try {
+    const res = await apiGet({ action:'getDailyLog', date: TODAY });
+    state.todayData = res.data || [];
+    renderTodayStats();
+    renderTodayTable();
+    renderTodayAlerts();
+    updateAlertBadge();
+  } catch(e) {
+    showToast('Error loading today\'s data', 'error');
+  }
+}
+
+function renderTodayStats() {
+  const data = state.todayData;
+  const totalPurchased  = data.reduce((s,r) => s + (Number(r.purchased)||0) * (Number(r.rate)||0), 0);
+  const totalUsedMorn   = data.reduce((s,r) => s + (Number(r.morning_used)||0) * (Number(r.rate)||0), 0);
+  const totalUsedEve    = data.reduce((s,r) => s + (Number(r.evening_used)||0) * (Number(r.rate)||0), 0);
+  const totalCost       = data.reduce((s,r) => s + (Number(r.cost_today)||0), 0);
+  const discrepancies   = data.filter(r => r.physical !== null && r.physical !== '' && Math.abs(Number(r.diff)||0) > 0.01).length;
+  const lowStock        = data.filter(r => r.threshold > 0 && (Number(r.calc_closing)||0) < Number(r.threshold)).length;
+
+  document.getElementById('today-stat-grid').innerHTML = [
+    { label:'Total Purchased (cost)', val:'₹' + fmt(totalPurchased), sub:'Today\'s raw material in', color:'var(--blue)' },
+    { label:'Morning Used (cost)',    val:'₹' + fmt(totalUsedMorn),  sub:'Morning tiffin cost',     color:'var(--amber)' },
+    { label:'Evening Used (cost)',    val:'₹' + fmt(totalUsedEve),   sub:'Evening tiffin cost',     color:'var(--orange)' },
+    { label:'Total Spend Today',      val:'₹' + fmt(totalCost),      sub:'All material cost',       color:'var(--green)' },
+    { label:'Discrepancies',          val: discrepancies,             sub:'Physical vs calculated',  color: discrepancies>0?'var(--red)':'var(--green)' },
+    { label:'Low Stock Items',        val: lowStock,                  sub:'Below threshold',         color: lowStock>0?'var(--amber)':'var(--green)' },
+  ].map(c => `
+    <div class="stat-card" style="border-color:${c.color}33;">
+      <div class="stat-label">${c.label}</div>
+      <div class="stat-val" style="color:${c.color};">${c.val}</div>
+      <div class="stat-sub">${c.sub}</div>
+    </div>
+  `).join('');
+}
+
+function renderTodayTable() {
+  const tbody = document.getElementById('today-table-body');
+  const data  = state.todayData;
+  if (!data.length) { tbody.innerHTML = '<tr><td colspan="11" class="empty-state">No data for today</td></tr>'; return; }
+
+  tbody.innerHTML = data.map(r => {
+    const diff = r.physical !== null && r.physical !== '' ? (Number(r.physical) - Number(r.calc_closing)) : null;
+    const isLow = r.threshold > 0 && (Number(r.calc_closing)||0) < Number(r.threshold);
+    const diffHtml = diff === null ? '<span class="text-muted">—</span>'
+      : diff < -0.01 ? `<span class="diff-negative fw7">${diff.toFixed(2)} ⚠️</span>`
+      : diff > 0.01  ? `<span class="diff-positive">${diff.toFixed(2)}</span>`
+      : `<span class="diff-zero">0.00 ✓</span>`;
+    const closingColor = isLow ? 'style="color:var(--red);font-weight:700;"' : '';
+
+    return `<tr>
+      <td class="fw7">${r.name}</td>
+      <td class="text-muted">${r.unit}</td>
+      <td class="mono">${(Number(r.opening)||0).toFixed(2)}</td>
+      <td class="mono text-green">${(Number(r.purchased)||0).toFixed(2)}</td>
+      <td class="mono text-amber">${(Number(r.morning_used)||0).toFixed(2)}</td>
+      <td class="mono" style="color:var(--orange);">${(Number(r.evening_used)||0).toFixed(2)}</td>
+      <td class="mono fw7" ${closingColor}>${(Number(r.calc_closing)||0).toFixed(2)}${isLow?' 🔴':''}</td>
+      <td class="mono">${r.physical !== null && r.physical !== '' ? Number(r.physical).toFixed(2) : '<span class="text-muted">—</span>'}</td>
+      <td class="mono">${diffHtml}</td>
+      <td class="mono text-muted">${r.rate > 0 ? '₹' + fmt((Number(r.purchased)||0) * Number(r.rate)) : '—'}</td>
+      <td>${r.locked ? '<span class="badge badge-muted">Locked</span>' : r.day_closed ? '<span class="badge badge-green">Closed</span>' : '<span class="badge badge-amber">Open</span>'}</td>
+    </tr>`;
+  }).join('');
+}
+
+function renderTodayAlerts() {
+  const data  = state.todayData;
+  const section = document.getElementById('today-alerts-section');
+  const alerts  = [];
+
+  data.forEach(r => {
+    const diff = r.physical !== null && r.physical !== '' ? (Number(r.physical) - Number(r.calc_closing)) : null;
+    if (diff !== null && Math.abs(diff) > 0.01) {
+      alerts.push({ type:'error', msg: `⚠️ ${r.name}: Physical count differs by ${diff.toFixed(2)} ${r.unit} (Calculated: ${Number(r.calc_closing).toFixed(2)}, Physical: ${Number(r.physical).toFixed(2)})` });
+    }
+  });
+
+  data.forEach(r => {
+    if (r.threshold > 0 && (Number(r.calc_closing)||0) < Number(r.threshold)) {
+      alerts.push({ type:'warning', msg: `🔴 Low Stock: ${r.name} — only ${Number(r.calc_closing).toFixed(2)} ${r.unit} left (threshold: ${r.threshold} ${r.unit})` });
+    }
+  });
+
+  section.innerHTML = alerts.map(a => `<div class="alert-bar ${a.type === 'warning' ? 'warning' : ''}">${a.msg}</div>`).join('');
+}
+
+function updateAlertBadge() {
+  const data = state.todayData;
+  let count  = 0;
+  data.forEach(r => {
+    const diff = r.physical !== null && r.physical !== '' ? Math.abs(Number(r.physical) - Number(r.calc_closing)) : 0;
+    if (diff > 0.01) count++;
+    if (r.threshold > 0 && (Number(r.calc_closing)||0) < Number(r.threshold)) count++;
+  });
+  const badge = document.getElementById('alert-count-badge');
+  if (count > 0) { badge.textContent = count; badge.style.display = 'inline'; }
+  else             badge.style.display = 'none';
+}
+
+// ════════════════════════════════════════════════════════
+// ALERTS PAGE
+// ════════════════════════════════════════════════════════
+function loadAlerts() {
+  const data = state.todayData;
+  const el   = document.getElementById('alerts-content');
+  const items = [];
+
+  data.forEach(r => {
+    const diff = r.physical !== null && r.physical !== '' ? (Number(r.physical) - Number(r.calc_closing)) : null;
+    if (diff !== null && Math.abs(diff) > 0.01) {
+      items.push(`<div class="alert-bar">
+        ⚠️ <strong>${r.name}</strong> — Discrepancy of <strong>${diff.toFixed(2)} ${r.unit}</strong>
+        &nbsp;|&nbsp; Calculated: ${Number(r.calc_closing).toFixed(2)} &nbsp;•&nbsp; Physical: ${Number(r.physical).toFixed(2)}
+      </div>`);
+    }
+  });
+
+  data.forEach(r => {
+    if (r.threshold > 0 && (Number(r.calc_closing)||0) < Number(r.threshold)) {
+      items.push(`<div class="alert-bar warning">
+        🔴 <strong>Low Stock — ${r.name}</strong>: ${Number(r.calc_closing).toFixed(2)} ${r.unit} remaining
+        &nbsp;|&nbsp; Alert threshold: ${r.threshold} ${r.unit}
+      </div>`);
+    }
+  });
+
+  el.innerHTML = items.length
+    ? items.join('')
+    : '<div class="alert-bar info">✅ No alerts today. All stock is within threshold and no discrepancies.</div>';
+}
+
+// ════════════════════════════════════════════════════════
+// HISTORY
+// ════════════════════════════════════════════════════════
+async function loadHistory() {
+  const date  = document.getElementById('history-date').value;
+  const tbody = document.getElementById('history-table-body');
+  const title = document.getElementById('history-card-title');
+  if (!date) return;
+  tbody.innerHTML = '<tr class="loading-row"><td colspan="10"><div class="spinner"></div> Loading...</td></tr>';
+  title.textContent = 'Loading...';
+  try {
+    const res = await apiGet({ action:'getDailyLog', date });
+    const data = res.data || [];
+    title.textContent = new Date(date + 'T00:00:00').toLocaleDateString('en-IN', { weekday:'long', day:'numeric', month:'long', year:'numeric' });
+    tbody.innerHTML = data.length
+      ? data.map(r => {
+          const diff = r.physical !== null && r.physical !== '' ? (Number(r.physical) - Number(r.calc_closing)) : null;
+          return `<tr>
+            <td class="fw7">${r.name}</td>
+            <td>${r.unit}</td>
+            <td class="mono">${(Number(r.opening)||0).toFixed(2)}</td>
+            <td class="mono text-green">${(Number(r.purchased)||0).toFixed(2)}</td>
+            <td class="mono text-amber">${(Number(r.morning_used)||0).toFixed(2)}</td>
+            <td class="mono" style="color:var(--orange);">${(Number(r.evening_used)||0).toFixed(2)}</td>
+            <td class="mono fw7">${(Number(r.calc_closing)||0).toFixed(2)}</td>
+            <td class="mono">${r.physical !== null && r.physical !== '' ? Number(r.physical).toFixed(2) : '—'}</td>
+            <td class="mono">${diff === null ? '—' : diff < -0.01 ? `<span class="text-red">${diff.toFixed(2)}</span>` : diff > 0.01 ? `<span class="text-green">+${diff.toFixed(2)}</span>` : '0.00 ✓'}</td>
+            <td class="mono text-muted">${r.rate > 0 ? '₹' + fmt((Number(r.purchased)||0)*Number(r.rate)) : '—'}</td>
+          </tr>`;
+        }).join('')
+      : '<tr><td colspan="10" class="empty-state">No data for this date</td></tr>';
+  } catch(e) {
+    tbody.innerHTML = '<tr><td colspan="10" class="empty-state">Error loading</td></tr>';
+  }
+}
+
+// ════════════════════════════════════════════════════════
+// MONTHLY
+// ════════════════════════════════════════════════════════
+async function loadMonthly() {
+  const month = document.getElementById('monthly-month').value;
+  const tbody = document.getElementById('monthly-table-body');
+  if (!month) return;
+  tbody.innerHTML = '<tr class="loading-row"><td colspan="8"><div class="spinner"></div></td></tr>';
+  try {
+    const res  = await apiGet({ action:'getMonthlySummary', month });
+    const data = res.data || [];
+    const totalCost  = data.reduce((s,r) => s + (Number(r.total_cost)||0), 0);
+    const totalPurch = data.reduce((s,r) => s + (Number(r.total_purchased)||0), 0);
+
+    document.getElementById('monthly-stat-grid').innerHTML = `
+      <div class="stat-card"><div class="stat-label">Total Purchase Cost</div><div class="stat-val" style="color:var(--green);">₹${fmt(totalCost)}</div><div class="stat-sub">${month}</div></div>
+      <div class="stat-card"><div class="stat-label">Active Ingredients</div><div class="stat-val">${data.length}</div><div class="stat-sub">tracked items</div></div>
+    `;
+
+    tbody.innerHTML = data.length
+      ? data.map(r => {
+          const totalUsed = (Number(r.total_morning)||0) + (Number(r.total_evening)||0);
+          return `<tr>
+            <td class="fw7">${r.name}</td>
+            <td>${r.unit}</td>
+            <td class="mono text-green">${(Number(r.total_purchased)||0).toFixed(2)}</td>
+            <td class="mono text-amber">${(Number(r.total_morning)||0).toFixed(2)}</td>
+            <td class="mono" style="color:var(--orange);">${(Number(r.total_evening)||0).toFixed(2)}</td>
+            <td class="mono fw7">${totalUsed.toFixed(2)}</td>
+            <td>${r.days_used || 0} days</td>
+            <td class="mono fw7 text-green">₹${fmt(Number(r.total_cost)||0)}</td>
+          </tr>`;
+        }).join('')
+      : '<tr><td colspan="8" class="empty-state">No data for this month</td></tr>';
+  } catch(e) {
+    tbody.innerHTML = '<tr><td colspan="8" class="empty-state">Error loading</td></tr>';
+  }
+}
+
+// ════════════════════════════════════════════════════════
+// AUDIT LOG
+// ════════════════════════════════════════════════════════
+async function loadAudit() {
+  const date  = document.getElementById('audit-date').value;
+  const tbody = document.getElementById('audit-table-body');
+  if (!date) return;
+  tbody.innerHTML = '<tr class="loading-row"><td colspan="5"><div class="spinner"></div></td></tr>';
+  try {
+    const res  = await apiGet({ action:'getAuditLog', date });
+    const data = res.data || [];
+    const actionLabels = {
+      PURCHASE_SUBMITTED:  '📦 Stock Entry',
+      MORNING_SUBMITTED:   '🌅 Morning Use',
+      EVENING_SUBMITTED:   '🌙 Evening Use',
+      DAY_CLOSE_SUBMITTED: '🔒 Day Close',
+      ENTRY_UNLOCKED:      '🔓 Unlocked by Owner',
+    };
+    tbody.innerHTML = data.length
+      ? data.map(r => `<tr>
+          <td class="mono text-sm">${r.Timestamp ? new Date(r.Timestamp).toLocaleTimeString('en-IN') : '—'}</td>
+          <td class="fw7">${r.Staff_Name || '—'}</td>
+          <td>${actionLabels[r.Action] || r.Action || '—'}</td>
+          <td class="text-muted">${r.Ingredient_Name || '—'}</td>
+          <td class="text-muted text-sm">${r.Notes || '—'}</td>
+        </tr>`).join('')
+      : '<tr><td colspan="5" class="empty-state">No activity for this date</td></tr>';
+  } catch(e) {
+    tbody.innerHTML = '<tr><td colspan="5" class="empty-state">Error loading</td></tr>';
+  }
+}
+
+// ════════════════════════════════════════════════════════
+// INGREDIENTS
+// ════════════════════════════════════════════════════════
+async function loadIngredients() {
+  const res = await apiGet({ action:'getIngredients' });
+  state.ingredients = res.data || [];
+}
+
+function renderIngTable() {
+  const tbody = document.getElementById('ing-table-body');
+  const data  = state.ingredients;
+  if (!data.length) { tbody.innerHTML = '<tr><td colspan="7" class="empty-state">No ingredients. Click + Add Item.</td></tr>'; return; }
+  tbody.innerHTML = data.map(r => `<tr>
+    <td class="fw7">${r.Name}</td>
+    <td>${r.Unit}</td>
+    <td class="mono">₹${Number(r.Rate_Per_Unit||0).toFixed(2)}</td>
+    <td>${r.Low_Stock_Threshold || '—'}</td>
+    <td>${r.Sort_Order || '—'}</td>
+    <td>${r.Active === 'YES' ? '<span class="badge badge-green">Active</span>' : '<span class="badge badge-muted">Inactive</span>'}</td>
+    <td>
+      <div style="display:flex;gap:6px;">
+        <button class="btn-icon" onclick="editIngredient('${r.ID}')">✏️ Edit</button>
+        <button class="btn-icon" style="color:var(--red);border-color:rgba(248,81,73,0.3);" onclick="askDeleteIng('${r.ID}','${r.Name}')">🗑️</button>
+      </div>
+    </td>
+  </tr>`).join('');
+}
+
+function openIngModal(id) {
+  const ing = id ? state.ingredients.find(i => i.ID === id) : null;
+  document.getElementById('ing-modal-title').textContent = ing ? 'Edit Ingredient' : 'Add Ingredient';
+  document.getElementById('ing-modal-id').value       = ing ? ing.ID : '';
+  document.getElementById('ing-modal-name').value     = ing ? ing.Name : '';
+  document.getElementById('ing-modal-unit').value     = ing ? ing.Unit : 'kg';
+  document.getElementById('ing-modal-rate').value     = ing ? ing.Rate_Per_Unit : '';
+  document.getElementById('ing-modal-threshold').value= ing ? ing.Low_Stock_Threshold : '';
+  document.getElementById('ing-modal-sort').value     = ing ? ing.Sort_Order : '';
+  openModal('ing-modal');
+}
+
+function editIngredient(id) { openIngModal(id); }
+
+async function saveIngredient() {
+  const id   = document.getElementById('ing-modal-id').value;
+  const name = document.getElementById('ing-modal-name').value.trim();
+  if (!name) { showToast('Name is required', 'error'); return; }
+  const body = {
+    action: 'saveIngredient',
+    id, name,
+    unit:       document.getElementById('ing-modal-unit').value,
+    rate:       document.getElementById('ing-modal-rate').value,
+    threshold:  document.getElementById('ing-modal-threshold').value,
+    sort_order: document.getElementById('ing-modal-sort').value,
+    active:     'YES',
+  };
+  const res = await apiPost(body);
+  if (res.success) {
+    showToast('Ingredient saved!', 'success');
+    closeModal('ing-modal');
+    await loadIngredients();
+    renderIngTable();
+  } else {
+    showToast('Error saving', 'error');
+  }
+}
+
+let deleteTarget = null;
+function askDeleteIng(id, name) {
+  deleteTarget = { type:'ingredient', id };
+  document.getElementById('confirm-msg').textContent = `Delete "${name}"? This cannot be undone.`;
+  openModal('confirm-modal');
+}
+
+async function confirmYes() {
+  if (!deleteTarget) return;
+  closeModal('confirm-modal');
+  if (deleteTarget.type === 'ingredient') {
+    const res = await apiPost({ action:'deleteIngredient', id: deleteTarget.id });
+    if (res.success) { showToast('Deleted', 'success'); await loadIngredients(); renderIngTable(); }
+    else showToast('Error deleting', 'error');
+  } else if (deleteTarget.type === 'staff') {
+    const res = await apiPost({ action:'deleteStaff', id: deleteTarget.id });
+    if (res.success) { showToast('Staff removed', 'success'); await loadStaffList(); renderStaffList(); }
+    else showToast('Error', 'error');
+  }
+  deleteTarget = null;
+}
+
+// ════════════════════════════════════════════════════════
+// STAFF
+// ════════════════════════════════════════════════════════
+async function loadStaffList() {
+  const res = await apiGet({ action:'getStaff' });
+  state.staff = res.data || [];
+}
+
+function renderStaffList() {
+  const el   = document.getElementById('staff-list-content');
+  const data = state.staff;
+  if (!data.length) { el.innerHTML = '<div class="empty-state">No staff added. Click + Add Staff.</div>'; return; }
+  el.innerHTML = data.map(s => `
+    <div class="list-item">
+      <div class="list-item-info">
+        <div class="list-item-name">👨‍🍳 ${s.Name}</div>
+        <div class="list-item-sub">PIN: ${'•'.repeat(String(s.PIN).length)} &nbsp;|&nbsp; ID: ${s.ID}</div>
+      </div>
+      <div class="list-item-actions">
+        <button class="btn-icon" onclick="editStaff('${s.ID}')">✏️ Edit</button>
+        <button class="btn-icon" style="color:var(--red);border-color:rgba(248,81,73,0.3);" onclick="askDeleteStaff('${s.ID}','${s.Name}')">Remove</button>
+      </div>
+    </div>
+  `).join('');
+}
+
+function openStaffModal(id) {
+  const s = id ? state.staff.find(x => x.ID === id) : null;
+  document.getElementById('staff-modal-title').textContent = s ? 'Edit Staff' : 'Add Staff';
+  document.getElementById('staff-modal-id').value   = s ? s.ID : '';
+  document.getElementById('staff-modal-name').value = s ? s.Name : '';
+  document.getElementById('staff-modal-pin').value  = s ? s.PIN : '';
+  openModal('staff-modal');
+}
+
+function editStaff(id) { openStaffModal(id); }
+
+async function saveStaff() {
+  const id   = document.getElementById('staff-modal-id').value;
+  const name = document.getElementById('staff-modal-name').value.trim();
+  const pin  = document.getElementById('staff-modal-pin').value.trim();
+  if (!name || !pin) { showToast('Name and PIN required', 'error'); return; }
+  const res = await apiPost({ action:'saveStaff', id, name, pin });
+  if (res.success) {
+    showToast('Staff saved!', 'success');
+    closeModal('staff-modal');
+    await loadStaffList();
+    renderStaffList();
+  } else showToast('Error saving', 'error');
+}
+
+function askDeleteStaff(id, name) {
+  deleteTarget = { type:'staff', id };
+  document.getElementById('confirm-msg').textContent = `Remove "${name}" from staff? They won't be able to login.`;
+  openModal('confirm-modal');
+}
+
+// ════════════════════════════════════════════════════════
+// SETTINGS
+// ════════════════════════════════════════════════════════
+async function loadSettings() {
+  const res = await apiGet({ action:'getSettings' });
+  state.settings = res.data || {};
+  const s = state.settings;
+  const setVal = (id, key) => { const el = document.getElementById(id); if (el && s[key] !== undefined) el.value = s[key]; };
+  setVal('s-purchase-time',  'purchase_unlock_time');
+  setVal('s-morning-time',   'morning_unlock_time');
+  setVal('s-evening-time',   'evening_unlock_time');
+  setVal('s-dayclose-time',  'dayclose_unlock_time');
+  setVal('s-biz-name',       'business_name');
+  setVal('s-morning-label',  'morning_slot_label');
+  setVal('s-evening-label',  'evening_slot_label');
+  setVal('s-retention',      'data_retention_months');
+  if (s.business_name) document.getElementById('sidebar-biz-name').textContent = s.business_name;
+}
+
+async function saveSettings() {
+  const settings = {
+    purchase_unlock_time:  document.getElementById('s-purchase-time').value,
+    morning_unlock_time:   document.getElementById('s-morning-time').value,
+    evening_unlock_time:   document.getElementById('s-evening-time').value,
+    dayclose_unlock_time:  document.getElementById('s-dayclose-time').value,
+    business_name:         document.getElementById('s-biz-name').value,
+    morning_slot_label:    document.getElementById('s-morning-label').value,
+    evening_slot_label:    document.getElementById('s-evening-label').value,
+    data_retention_months: document.getElementById('s-retention').value,
+  };
+  const res = await apiPost({ action:'saveSettings', settings });
+  if (res.success) {
+    showToast('Settings saved!', 'success');
+    await loadSettings();
+  } else showToast('Error saving settings', 'error');
+}
+
+async function changePassword() {
+  const cur = document.getElementById('s-cur-pwd').value;
+  const nw  = document.getElementById('s-new-pwd').value;
+  if (!cur || !nw) { showToast('Enter current and new password', 'error'); return; }
+  if (nw.length < 4) { showToast('Password too short (min 4 chars)', 'error'); return; }
+  const res = await apiPost({ action:'updateOwnerPassword', current: cur, newPassword: nw });
+  if (res.success) {
+    showToast('Password changed!', 'success');
+    document.getElementById('s-cur-pwd').value = '';
+    document.getElementById('s-new-pwd').value = '';
+  } else showToast(res.error || 'Wrong current password', 'error');
+}
+
+// ════════════════════════════════════════════════════════
+// MODAL HELPERS
+// ════════════════════════════════════════════════════════
+function openModal(id)  { document.getElementById(id).classList.add('open'); }
+function closeModal(id) { document.getElementById(id).classList.remove('open'); if (id === 'calc-modal') document.getElementById('calc-iframe').src = ''; }
+function closeModalOnBg(e, id) { if (e.target.id === id) closeModal(id); }
+
+// ════════════════════════════════════════════════════════
+// TOAST
+// ════════════════════════════════════════════════════════
+let toastTimer;
+function showToast(msg, type = '') {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.className   = 'toast show ' + type;
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => t.classList.remove('show'), 3000);
+}
+
+// ════════════════════════════════════════════════════════
+// HELPERS
+// ════════════════════════════════════════════════════════
+function fmt(n) {
+  const num = Number(n) || 0;
+  return num.toLocaleString('en-IN', { maximumFractionDigits: 2 });
+}
+
+// Enter key login
+document.getElementById('owner-pwd-inp').addEventListener('keydown', e => { if (e.key === 'Enter') doOwnerLogin(); });
+</script>
+</body>
+</html>
