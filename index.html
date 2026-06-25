@@ -1,0 +1,778 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"/>
+<title>Tiffo Contacts</title>
+<link rel="icon" href="https://em-content.zobj.net/source/google/387/card-file-box_1f5c3-fe0f.png"/>
+<style>
+:root {
+  --bg: #0f0f14;
+  --surface: #18181f;
+  --surface2: #22222d;
+  --border: #2a2a38;
+  --accent: #7c6ef5;
+  --accent2: #5eead4;
+  --danger: #f87171;
+  --warn: #fbbf24;
+  --green: #34d399;
+  --text: #f0f0f8;
+  --muted: #6b6b80;
+  --radius: 14px;
+  --radius-sm: 8px;
+}
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+html { font-size: 16px; }
+body {
+  font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+  background: var(--bg);
+  color: var(--text);
+  min-height: 100vh;
+  overflow-x: hidden;
+}
+.app { display: flex; flex-direction: column; min-height: 100vh; }
+
+/* ── Header ── */
+header {
+  background: var(--surface);
+  border-bottom: 1px solid var(--border);
+  padding: 14px 20px;
+  display: flex; align-items: center; justify-content: space-between;
+  position: sticky; top: 0; z-index: 100;
+}
+.logo {
+  display: flex; align-items: center; gap: 10px;
+  font-size: 20px; font-weight: 800; letter-spacing: -0.5px; color: var(--text);
+}
+.logo-dot {
+  width: 10px; height: 10px; border-radius: 50%;
+  background: var(--accent); display: inline-block;
+  box-shadow: 0 0 8px var(--accent);
+}
+.header-count {
+  font-size: 13px; color: var(--muted);
+  background: var(--surface2); padding: 4px 12px; border-radius: 20px;
+  border: 1px solid var(--border);
+}
+
+/* ── Tabs ── */
+.tabs {
+  display: flex;
+  background: var(--surface);
+  border-bottom: 1px solid var(--border);
+  padding: 0 16px; gap: 4px; overflow-x: auto;
+}
+.tabs::-webkit-scrollbar { display: none; }
+.tab {
+  padding: 12px 20px;
+  font-size: 14px; font-weight: 600; color: var(--muted);
+  cursor: pointer; border-bottom: 2px solid transparent;
+  white-space: nowrap; transition: color 0.15s, border-color 0.15s;
+  user-select: none;
+}
+.tab.active { color: var(--accent); border-bottom-color: var(--accent); }
+.tab:hover:not(.active) { color: var(--text); }
+
+/* ── Content ── */
+.content { flex: 1; padding: 20px; max-width: 640px; margin: 0 auto; width: 100%; }
+.section { display: none; }
+.section.active { display: block; }
+
+/* ── Card ── */
+.card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 20px; margin-bottom: 16px;
+}
+
+/* ── Form ── */
+.field { margin-bottom: 14px; }
+.field label {
+  display: block; font-size: 12px; font-weight: 700;
+  color: var(--muted); text-transform: uppercase;
+  letter-spacing: 0.8px; margin-bottom: 6px;
+}
+.field input {
+  width: 100%;
+  background: var(--surface2);
+  border: 1.5px solid var(--border);
+  border-radius: var(--radius-sm);
+  color: var(--text); font-size: 16px;
+  padding: 12px 14px; outline: none;
+  transition: border-color 0.15s;
+  -webkit-appearance: none;
+}
+.field input:focus { border-color: var(--accent); }
+.field input::placeholder { color: var(--muted); font-size: 14px; }
+.field input.valid   { border-color: var(--green); }
+.field input.invalid { border-color: var(--danger); }
+
+.num-hint {
+  font-size: 12px; margin-top: 5px;
+  color: var(--muted); min-height: 16px; transition: color 0.15s;
+}
+.num-hint.ok  { color: var(--green); }
+.num-hint.bad { color: var(--danger); }
+.num-hint.dup { color: var(--warn); }
+
+/* ── Toggles ── */
+.toggle-row {
+  display: grid; grid-template-columns: 1fr 1fr; gap: 10px;
+  margin-bottom: 14px;
+}
+.toggle-group label {
+  display: block; font-size: 12px; font-weight: 700;
+  color: var(--muted); text-transform: uppercase;
+  letter-spacing: 0.8px; margin-bottom: 6px;
+}
+.toggle-btns { display: flex; gap: 6px; }
+.toggle-btn {
+  flex: 1; padding: 9px 0; font-size: 13px; font-weight: 700;
+  border-radius: 8px; cursor: pointer;
+  border: 1.5px solid var(--border);
+  background: var(--surface2); color: var(--muted);
+  transition: all 0.15s; user-select: none; text-align: center;
+}
+.toggle-btn.yes.selected { background: rgba(52,211,153,0.15); border-color: var(--green); color: var(--green); }
+.toggle-btn.no.selected  { background: rgba(248,113,113,0.12); border-color: var(--danger); color: var(--danger); }
+.toggle-btn:hover:not(.selected) { border-color: var(--accent); color: var(--text); }
+
+/* ── Buttons ── */
+.btn-primary {
+  width: 100%; padding: 15px;
+  background: var(--accent); color: white;
+  border: none; border-radius: var(--radius-sm);
+  font-size: 16px; font-weight: 700;
+  cursor: pointer; transition: opacity 0.15s, transform 0.1s;
+  letter-spacing: 0.3px;
+}
+.btn-primary:hover { opacity: 0.9; }
+.btn-primary:active { transform: scale(0.98); }
+.btn-primary:disabled { opacity: 0.4; cursor: not-allowed; transform: none; }
+
+.btn-vcf {
+  width: 100%; padding: 18px;
+  background: linear-gradient(135deg, var(--accent), var(--accent2));
+  color: white; border: none; border-radius: var(--radius);
+  font-size: 18px; font-weight: 800;
+  cursor: pointer; letter-spacing: 0.3px;
+  transition: opacity 0.15s, transform 0.1s;
+  box-shadow: 0 4px 20px rgba(124,110,245,0.3);
+  margin-top: 8px;
+}
+.btn-vcf:hover { opacity: 0.92; }
+.btn-vcf:active { transform: scale(0.98); }
+.btn-vcf:disabled { opacity: 0.4; cursor: not-allowed; transform: none; }
+
+/* ── Toast ── */
+#toast {
+  position: fixed; bottom: 24px; left: 50%;
+  transform: translateX(-50%) translateY(100px);
+  background: var(--surface2); border: 1px solid var(--border);
+  color: var(--text); padding: 12px 22px; border-radius: 30px;
+  font-size: 14px; font-weight: 600;
+  z-index: 9999; transition: transform 0.3s cubic-bezier(.34,1.56,.64,1);
+  white-space: normal; max-width: calc(100vw - 40px); text-align: center;
+  pointer-events: none;
+  box-shadow: 0 8px 30px rgba(0,0,0,0.5);
+}
+#toast.show    { transform: translateX(-50%) translateY(0); }
+#toast.success { border-color: var(--green);  color: var(--green); }
+#toast.error   { border-color: var(--danger); color: var(--danger); }
+#toast.warn    { border-color: var(--warn);   color: var(--warn); }
+
+/* ── Dup Banner ── */
+#dupBanner {
+  display: none;
+  background: rgba(251,191,36,0.1);
+  border: 1.5px solid var(--warn);
+  border-radius: var(--radius-sm);
+  padding: 12px 16px; margin-bottom: 14px;
+  font-size: 13px; color: var(--warn); font-weight: 600;
+}
+#dupBanner.show { display: block; }
+
+/* ── Search ── */
+.search-wrap { position: relative; margin-bottom: 16px; }
+.search-icon {
+  position: absolute; left: 14px; top: 50%;
+  transform: translateY(-50%);
+  color: var(--muted); font-size: 16px; pointer-events: none;
+}
+#searchInput {
+  width: 100%;
+  background: var(--surface2);
+  border: 1.5px solid var(--border);
+  border-radius: var(--radius-sm);
+  color: var(--text); font-size: 16px;
+  padding: 12px 14px 12px 42px;
+  outline: none; transition: border-color 0.15s;
+  -webkit-appearance: none;
+}
+#searchInput:focus { border-color: var(--accent); }
+
+/* ── Contact list ── */
+.contact-item {
+  background: var(--surface); border: 1px solid var(--border);
+  border-radius: var(--radius-sm); padding: 14px 16px;
+  margin-bottom: 8px; display: flex; align-items: center; gap: 12px;
+}
+.contact-avatar {
+  width: 40px; height: 40px; border-radius: 50%;
+  background: linear-gradient(135deg, var(--accent), var(--accent2));
+  display: flex; align-items: center; justify-content: center;
+  font-size: 15px; font-weight: 800; color: white; flex-shrink: 0;
+  text-transform: uppercase;
+}
+.contact-info { flex: 1; min-width: 0; }
+.contact-name { font-size: 15px; font-weight: 700; color: var(--text); margin-bottom: 2px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.contact-num  { font-size: 13px; color: var(--muted); font-family: monospace; }
+.contact-meta { font-size: 11px; color: var(--muted); margin-top: 3px; }
+.contact-badges { display: flex; gap: 5px; margin-top: 5px; flex-wrap: wrap; }
+.badge {
+  font-size: 10px; font-weight: 700; padding: 2px 8px;
+  border-radius: 20px; text-transform: uppercase; letter-spacing: 0.5px;
+}
+.badge-sheet { background: rgba(124,110,245,0.15); color: var(--accent); }
+.badge-yes   { background: rgba(52,211,153,0.15);  color: var(--green); }
+.badge-no    { background: rgba(248,113,113,0.12); color: var(--danger); }
+
+.empty-state { text-align: center; padding: 60px 20px; color: var(--muted); }
+.empty-state .big { font-size: 48px; margin-bottom: 12px; }
+.empty-state p { font-size: 15px; }
+
+/* ── VCF section ── */
+.vcf-hero { text-align: center; padding: 24px 0 20px; }
+.vcf-hero .emoji { font-size: 64px; display: block; margin-bottom: 12px; }
+.vcf-hero h2 { font-size: 22px; font-weight: 800; margin-bottom: 6px; }
+.vcf-hero p  { font-size: 14px; color: var(--muted); }
+
+.stats-row { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin: 20px 0; }
+.stat-box {
+  background: var(--surface2); border: 1px solid var(--border);
+  border-radius: var(--radius-sm); padding: 14px 10px; text-align: center;
+}
+.stat-val { font-size: 24px; font-weight: 800; color: var(--accent); }
+.stat-lbl { font-size: 11px; color: var(--muted); margin-top: 3px; font-weight: 600; text-transform: uppercase; }
+
+.vcf-preview-box {
+  background: var(--surface2); border: 1px solid var(--border);
+  border-radius: var(--radius-sm); padding: 14px 16px;
+  font-family: monospace; font-size: 12px; color: var(--muted);
+  max-height: 160px; overflow-y: auto; white-space: pre; margin-top: 16px;
+}
+
+/* ── Setup banner ── */
+#setupBanner {
+  background: rgba(248,113,113,0.1);
+  border: 1.5px solid var(--danger);
+  border-radius: var(--radius-sm);
+  padding: 14px 16px; margin-bottom: 16px;
+  font-size: 13px; color: var(--danger); font-weight: 600;
+  display: none;
+}
+#setupBanner.show { display: block; }
+
+/* ── Spinner ── */
+.spin {
+  display: inline-block; width: 18px; height: 18px;
+  border: 2.5px solid rgba(255,255,255,0.3);
+  border-top-color: white; border-radius: 50%;
+  animation: spin 0.6s linear infinite;
+  vertical-align: middle; margin-right: 8px;
+}
+@keyframes spin { to { transform: rotate(360deg); } }
+
+.list-loader { text-align: center; padding: 40px; color: var(--muted); font-size: 14px; }
+.list-loader .spin {
+  border-color: var(--border); border-top-color: var(--accent);
+  width: 28px; height: 28px; display: block; margin: 0 auto 12px;
+}
+
+@media (max-width: 400px) {
+  .toggle-row { grid-template-columns: 1fr; }
+  .content { padding: 16px; }
+}
+</style>
+</head>
+<body>
+<div class="app">
+
+<header>
+  <div class="logo">
+    <span class="logo-dot"></span>
+    Tiffo Contacts
+  </div>
+  <div class="header-count" id="headerCount">—</div>
+</header>
+
+<div class="tabs">
+  <div class="tab active" data-tab="add"    onclick="switchTab('add')">➕ Add</div>
+  <div class="tab"        data-tab="search" onclick="switchTab('search')">🔍 Search</div>
+  <div class="tab"        data-tab="vcf"    onclick="switchTab('vcf')">📇 VCF</div>
+</div>
+
+<div class="content">
+
+  <!-- ── ADD ── -->
+  <div class="section active" id="tab-add">
+    <div id="setupBanner">⚠️ GAS_URL set nahi hai — Code.gs deploy karo aur URL fill karo</div>
+    <div class="card">
+      <div id="dupBanner"></div>
+
+      <div class="field">
+        <label>Name <span style="color:var(--muted);font-size:10px;font-weight:400;text-transform:none">(optional — blank rakho toh VCF mein sirf "Tiffo" banega)</span></label>
+        <input type="text" id="inpName" placeholder="e.g. Rahul Kumar" autocomplete="off"/>
+      </div>
+
+      <div class="field">
+        <label>Mobile Number *</label>
+        <input type="tel" id="inpNum" placeholder="9876543210"
+               autocomplete="off" inputmode="numeric" maxlength="20"/>
+        <div class="num-hint" id="numHint"></div>
+      </div>
+
+      <div class="toggle-row">
+        <div class="toggle-group">
+          <label>Account Created <span style="color:var(--muted);font-size:10px;font-weight:400;text-transform:none">(optional)</span></label>
+          <div class="toggle-btns">
+            <div class="toggle-btn yes" data-group="ac" data-val="Yes" onclick="toggleSelect(this)">Yes</div>
+            <div class="toggle-btn no"  data-group="ac" data-val="No"  onclick="toggleSelect(this)">No</div>
+          </div>
+        </div>
+        <div class="toggle-group">
+          <label>Monthly Plan <span style="color:var(--muted);font-size:10px;font-weight:400;text-transform:none">(optional)</span></label>
+          <div class="toggle-btns">
+            <div class="toggle-btn yes" data-group="mp" data-val="Yes" onclick="toggleSelect(this)">Yes</div>
+            <div class="toggle-btn no"  data-group="mp" data-val="No"  onclick="toggleSelect(this)">No</div>
+          </div>
+        </div>
+      </div>
+
+      <button class="btn-primary" id="btnSave" onclick="saveContact()">
+        Save Contact
+      </button>
+    </div>
+  </div>
+
+  <!-- ── SEARCH ── -->
+  <div class="section" id="tab-search">
+    <div class="search-wrap">
+      <span class="search-icon">🔍</span>
+      <input type="search" id="searchInput" placeholder="Naam ya number type karo…"
+             oninput="onSearch(this.value)" onsearch="onSearch(this.value)" autocomplete="off"/>
+    </div>
+    <div id="searchResults">
+      <div class="empty-state">
+        <div class="big">🔍</div>
+        <p>Koi bhi naam ya number type karo</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── VCF ── -->
+  <div class="section" id="tab-vcf">
+    <div class="card">
+      <div class="vcf-hero">
+        <span class="emoji">📇</span>
+        <h2>Generate VCF</h2>
+        <p>Sabhi sheets ke contacts ek file mein — phone mein directly import karo</p>
+      </div>
+      <div class="stats-row">
+        <div class="stat-box">
+          <div class="stat-val" id="vcfTotal">—</div>
+          <div class="stat-lbl">Total</div>
+        </div>
+        <div class="stat-box">
+          <div class="stat-val" id="vcfUnique">—</div>
+          <div class="stat-lbl">Unique</div>
+        </div>
+        <div class="stat-box">
+          <div class="stat-val" id="vcfSheets">—</div>
+          <div class="stat-lbl">Sheets</div>
+        </div>
+      </div>
+      <button class="btn-vcf" id="btnVCF" onclick="generateVCF()">
+        ⚡ Generate &amp; Download VCF
+      </button>
+      <div class="vcf-preview-box" id="vcfPreview" style="display:none"></div>
+    </div>
+  </div>
+
+</div>
+</div>
+<div id="toast"></div>
+
+<script>
+// ─── CONFIG ───────────────────────────────────────────────
+// ⚠️ Apna GAS Web App URL yahan paste karo
+const GAS_URL = 'https://script.google.com/macros/s/AKfycbx1l8aPWMbCHyqDfHkickJDrbsKH88U0oe00Esp9kolNC8zcbg5JUZXVvBwRNxKEIet/exec';
+
+// ─── GAS bridge with timeout ──────────────────────────────
+async function gas(action, payload = {}) {
+  if (GAS_URL === 'YOUR_GAS_WEB_APP_URL_HERE') {
+    throw new Error('GAS_URL set nahi hai');
+  }
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), 15000); // 15s timeout
+  try {
+    const r = await fetch(GAS_URL, {
+      method: 'POST',
+      headers: { 'Content-Type': 'text/plain' },
+      body: JSON.stringify({ action, ...payload }),
+      signal: controller.signal
+    });
+    clearTimeout(timer);
+    const json = await r.json();
+    if (!json.success) throw new Error(json.message || 'Server error');
+    return json;
+  } catch(e) {
+    clearTimeout(timer);
+    if (e.name === 'AbortError') throw new Error('Timeout — GAS slow hai, retry karo');
+    throw e;
+  }
+}
+
+// ─── Utilities ────────────────────────────────────────────
+function normalizeNumber(raw) {
+  if (!raw) return null;
+  let s = raw.toString().replace(/[\s\-\(\)\+]/g, '').replace(/[^0-9]/g, '');
+  if (s.length === 12 && s.startsWith('91')) s = s.slice(2);
+  else if (s.length === 11 && s.startsWith('0')) s = s.slice(1);
+  return (s.length === 10 && /^[6-9]/.test(s)) ? s : null;
+}
+
+// Auto-name: blank store karo sheet mein, VCF mein "Tiffo" banega
+// But UI display ke liye temp label chahiye
+function autoLabel(num) { return 'New' + num.slice(-5); }
+
+function vcfDateStr() {
+  const d = new Date();
+  const months = ['January','February','March','April','May','June',
+                  'July','August','September','October','November','December'];
+  return String(d.getDate()).padStart(2,'0') + months[d.getMonth()] + d.getFullYear();
+}
+
+function avatarLetter(name) {
+  if (!name) return '#';
+  return name.trim()[0].toUpperCase();
+}
+
+function esc(s) {
+  return String(s || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+}
+
+// ─── Toast ────────────────────────────────────────────────
+let _toastTimer;
+function toast(msg, type = 'success', duration = 3000) {
+  const el = document.getElementById('toast');
+  el.textContent = msg;
+  el.className = 'show ' + type;
+  clearTimeout(_toastTimer);
+  _toastTimer = setTimeout(() => { el.className = ''; }, duration);
+}
+
+// ─── Tab switching ────────────────────────────────────────
+function switchTab(name) {
+  document.querySelectorAll('.tab').forEach(t =>
+    t.classList.toggle('active', t.dataset.tab === name));
+  document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
+  document.getElementById('tab-' + name).classList.add('active');
+  if (name === 'vcf') loadVCFStats();
+}
+
+// ─── Toggle buttons ───────────────────────────────────────
+function toggleSelect(el) {
+  const group = el.dataset.group;
+  const wasSelected = el.classList.contains('selected');
+  document.querySelectorAll(`.toggle-btn[data-group="${group}"]`)
+    .forEach(b => b.classList.remove('selected'));
+  if (!wasSelected) el.classList.add('selected'); // second click = off
+}
+
+function getToggle(group) {
+  const sel = document.querySelector(`.toggle-btn[data-group="${group}"].selected`);
+  return sel ? sel.dataset.val : '';
+}
+
+// ─── Number live validation + dup check ──────────────────
+let _dupCheckTimer;
+document.getElementById('inpNum').addEventListener('input', function () {
+  const hint   = document.getElementById('numHint');
+  const banner = document.getElementById('dupBanner');
+
+  // Reset dup banner on every keystroke
+  banner.className = '';
+  banner.textContent = '';
+
+  const raw = this.value;
+  if (!raw) {
+    this.classList.remove('valid', 'invalid');
+    hint.textContent = '';
+    hint.className = 'num-hint';
+    clearTimeout(_dupCheckTimer);
+    return;
+  }
+
+  const num = normalizeNumber(raw);
+  if (!num) {
+    this.classList.remove('valid');
+    this.classList.add('invalid');
+    hint.textContent = '✗ Invalid — 10-digit Indian number chahiye';
+    hint.className = 'num-hint bad';
+    clearTimeout(_dupCheckTimer);
+    return;
+  }
+
+  // Valid number
+  this.classList.remove('invalid');
+  this.classList.add('valid');
+  hint.textContent = '✓ +91 ' + num;
+  hint.className = 'num-hint ok';
+
+  // Debounced duplicate check
+  clearTimeout(_dupCheckTimer);
+  _dupCheckTimer = setTimeout(async () => {
+    try {
+      const res = await gas('checkDuplicate', { number: num });
+      if (res.duplicate) {
+        const who = res.name ? `"${res.name}"` : 'Ek contact';
+        banner.textContent = `⚠️ ${who} is number se already save hai (${res.sheet})`;
+        banner.className = 'show';
+        hint.textContent = '✗ Already exists';
+        hint.className = 'num-hint dup';
+        document.getElementById('inpNum').classList.remove('valid');
+        document.getElementById('inpNum').classList.add('invalid');
+      }
+    } catch (e) { /* silent — offline ya URL issue */ }
+  }, 600);
+});
+
+// ─── Save Contact ─────────────────────────────────────────
+async function saveContact() {
+  const rawNum = document.getElementById('inpNum').value.trim();
+  const num = normalizeNumber(rawNum);
+
+  if (!num) {
+    toast('Valid 10-digit number daalo', 'error');
+    document.getElementById('inpNum').focus();
+    return;
+  }
+
+  // If dup banner already showing, block save
+  if (document.getElementById('dupBanner').classList.contains('show')) {
+    toast('Yeh number already save hai!', 'warn');
+    return;
+  }
+
+  const name = document.getElementById('inpName').value.trim();
+  // Blank name → empty string in sheet (VCF me "Tiffo" banega, not "Tiffo - New98765")
+  const ac = getToggle('ac');
+  const mp = getToggle('mp');
+
+  const btn = document.getElementById('btnSave');
+  btn.disabled = true;
+  btn.innerHTML = '<span class="spin"></span>Saving…';
+
+  try {
+    const res = await gas('addContact', { name, number: num, accountCreated: ac, monthlyPlan: mp });
+    toast(`✅ Saved in ${res.sheet}`, 'success');
+
+    // Reset form fully
+    document.getElementById('inpName').value = '';
+    document.getElementById('inpNum').value = '';
+    document.getElementById('inpNum').classList.remove('valid', 'invalid');
+    document.getElementById('numHint').textContent = '';
+    document.getElementById('numHint').className = 'num-hint';
+    document.getElementById('dupBanner').className = '';
+    document.getElementById('dupBanner').textContent = '';
+    document.querySelectorAll('.toggle-btn').forEach(b => b.classList.remove('selected'));
+
+    // Increment header count (only if we have a valid baseline)
+    if (_totalCount >= 0) {
+      _totalCount++;
+      document.getElementById('headerCount').textContent = _totalCount + ' contacts';
+    }
+
+    document.getElementById('inpName').focus();
+  } catch (e) {
+    // Duplicate caught by server (race condition — someone else added between check and save)
+    if (e.message.toLowerCase().includes('already')) {
+      document.getElementById('dupBanner').textContent = '⚠️ ' + e.message;
+      document.getElementById('dupBanner').className = 'show';
+      toast('Already save hai!', 'warn');
+    } else {
+      toast(e.message, 'error', 5000);
+    }
+  }
+
+  btn.disabled = false;
+  btn.textContent = 'Save Contact';
+}
+
+// ─── Header count ─────────────────────────────────────────
+let _totalCount = -1; // -1 = unknown (boot failed)
+
+// ─── Search ───────────────────────────────────────────────
+let _searchTimer;
+let _searchReq = 0; // request counter — stale responses discard karo
+function onSearch(val) {
+  clearTimeout(_searchTimer);
+  const results = document.getElementById('searchResults');
+  if (!val.trim()) {
+    results.innerHTML = `<div class="empty-state"><div class="big">🔍</div><p>Koi bhi naam ya number type karo</p></div>`;
+    return;
+  }
+  results.innerHTML = `<div class="list-loader"><div class="spin"></div>Searching…</div>`;
+  _searchTimer = setTimeout(() => doSearch(val.trim()), 400);
+}
+
+async function doSearch(query) {
+  const results = document.getElementById('searchResults');
+  const reqId = ++_searchReq; // snapshot this request's ID
+  // Also try normalized form of query (e.g. user types '09876...' or '+91 98...')
+  const normQuery = normalizeNumber(query) || '';
+  try {
+    const res = await gas('search', { query, normQuery });
+    if (reqId !== _searchReq) return; // stale — newer request already fired
+    renderContacts(res.contacts, results);
+  } catch (e) {
+    if (reqId !== _searchReq) return;
+    results.innerHTML = `<div class="empty-state"><div class="big">⚠️</div><p>${esc(e.message)}</p></div>`;
+  }
+}
+
+function renderContacts(contacts, container) {
+  if (!contacts.length) {
+    container.innerHTML = `<div class="empty-state"><div class="big">😶</div><p>Koi contact nahi mila</p></div>`;
+    return;
+  }
+  container.innerHTML = contacts.map(c => {
+    const displayName = c.name || autoLabel(c.number);
+    const letter = avatarLetter(displayName);
+    const ac = (c.accountCreated || '').trim();
+    const mp = (c.monthlyPlan || '').trim();
+    const dateAdded = c.dateAdded ? `<div class="contact-meta">${esc(c.dateAdded)}</div>` : '';
+    return `<div class="contact-item">
+      <div class="contact-avatar">${esc(letter)}</div>
+      <div class="contact-info">
+        <div class="contact-name">${esc(displayName)}</div>
+        <div class="contact-num">+91 ${esc(c.number)}</div>
+        ${dateAdded}
+        <div class="contact-badges">
+          <span class="badge badge-sheet">${esc(c.sheet)}</span>
+          ${ac === 'Yes' ? '<span class="badge badge-yes">AC ✓</span>' : ac === 'No' ? '<span class="badge badge-no">AC ✗</span>' : ''}
+          ${mp === 'Yes' ? '<span class="badge badge-yes">MP ✓</span>' : mp === 'No' ? '<span class="badge badge-no">MP ✗</span>' : ''}
+        </div>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+// ─── VCF Stats ────────────────────────────────────────────
+async function loadVCFStats() {
+  try {
+    const res = await gas('getStats');
+    document.getElementById('vcfTotal').textContent  = res.total;
+    document.getElementById('vcfUnique').textContent = res.unique;
+    document.getElementById('vcfSheets').textContent = res.sheets;
+    _totalCount = res.total;
+    document.getElementById('headerCount').textContent = res.total + ' contacts';
+  } catch (e) { /* silent */ }
+}
+
+// ─── Generate VCF ─────────────────────────────────────────
+async function generateVCF() {
+  const btn = document.getElementById('btnVCF');
+  btn.disabled = true;
+  btn.innerHTML = '<span class="spin"></span> Generating…';
+  const preview = document.getElementById('vcfPreview');
+  preview.style.display = 'none';
+
+  try {
+    const res = await gas('getAllForVCF');
+    const contacts = res.contacts;
+
+    if (!contacts.length) {
+      toast('Koi contact nahi mila', 'warn');
+      btn.disabled = false;
+      btn.innerHTML = '⚡ Generate &amp; Download VCF';
+      return;
+    }
+
+    // vCard FN value escaping — per RFC 6350
+    function escVcf(s) {
+      return s.replace(/[\r\n\t]/g, ' ')   // newlines/tabs → space (S7 fix)
+               .replace(/\\/g, '\\\\')     // backslash first
+               .replace(/;/g, '\\;')       // semicolon
+               .replace(/,/g, '\\,');      // comma (S5 fix)
+    }
+
+    // Build VCF — blank line between each entry (required by spec)
+    const entries = contacts.map(c => {
+      const fn = c.name ? `Tiffo - ${escVcf(c.name)}` : 'Tiffo';
+      return `BEGIN:VCARD\r\nVERSION:3.0\r\nFN:${fn}\r\nTEL;TYPE=CELL:+91${c.number}\r\nEND:VCARD`;
+    });
+    const vcfContent = entries.join('\r\n\r\n'); // blank line between entries per vCard spec
+
+    const fileName = `Tiffo ${vcfDateStr()} ${contacts.length}.vcf`;
+    const blob = new Blob([vcfContent], { type: 'text/vcard;charset=utf-8' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url; a.download = fileName; a.click();
+    URL.revokeObjectURL(url);
+
+    // Update stats
+    document.getElementById('vcfTotal').textContent  = contacts.length;
+    document.getElementById('vcfUnique').textContent = contacts.length;
+
+    // Preview (strip \r for clean display)
+    const previewEntries = entries.slice(0, 3).map(e => e.replace(/\r\n/g, '\n'));
+    preview.style.display = 'block';
+    preview.textContent = previewEntries.join('\n\n') +
+      (entries.length > 3 ? `\n\n…aur ${entries.length - 3} contacts` : '');
+
+    toast(`✅ ${fileName} downloaded!`, 'success', 4000);
+  } catch (e) {
+    toast(e.message, 'error', 5000);
+  }
+
+  btn.disabled = false;
+  btn.innerHTML = '⚡ Generate &amp; Download VCF';
+}
+
+// ─── Enter key = Save (only on Add tab) ──────────────────
+document.addEventListener('keydown', e => {
+  if (e.key === 'Enter' &&
+      !e.shiftKey && !e.ctrlKey &&
+      document.getElementById('tab-add').classList.contains('active') &&
+      !document.getElementById('btnSave').disabled) {  // guard: prevent double-save
+    e.preventDefault();
+    saveContact();
+  }
+});
+
+// ─── Boot ─────────────────────────────────────────────────
+(async () => {
+  // Check config
+  if (GAS_URL === 'YOUR_GAS_WEB_APP_URL_HERE') {
+    document.getElementById('setupBanner').classList.add('show');
+    document.getElementById('headerCount').textContent = 'Setup needed';
+    return;
+  }
+  try {
+    const res = await gas('getStats');
+    _totalCount = res.total;
+    document.getElementById('headerCount').textContent = res.total + ' contacts';
+    document.getElementById('vcfTotal').textContent  = res.total;
+    document.getElementById('vcfUnique').textContent = res.unique;
+    document.getElementById('vcfSheets').textContent = res.sheets;
+  } catch (e) {
+    document.getElementById('headerCount').textContent = 'Offline';
+    toast('GAS connect nahi hua — check URL', 'error', 5000);
+  }
+})();
+</script>
+</body>
+</html>
