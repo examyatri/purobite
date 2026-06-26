@@ -7,22 +7,31 @@
 <link rel="icon" href="https://em-content.zobj.net/source/google/387/card-file-box_1f5c3-fe0f.png"/>
 <style>
 :root {
-  --bg: #0f0f14;
-  --surface: #18181f;
-  --surface2: #22222d;
-  --border: #2a2a38;
-  --accent: #7c6ef5;
-  --accent2: #5eead4;
-  --danger: #f87171;
-  --warn: #fbbf24;
-  --green: #34d399;
-  --text: #f0f0f8;
-  --muted: #6b6b80;
-  --radius: 14px;
-  --radius-sm: 8px;
+  --bg:        #0b0b10;
+  --surface:   #13131a;
+  --surface2:  #1c1c26;
+  --surface3:  #242432;
+  --border:    #272738;
+  --border2:   #32324a;
+  --accent:    #7c6ef5;
+  --accent-lo: rgba(124,110,245,0.12);
+  --accent2:   #5eead4;
+  --danger:    #f87171;
+  --danger-lo: rgba(248,113,113,0.1);
+  --warn:      #fbbf24;
+  --warn-lo:   rgba(251,191,36,0.1);
+  --green:     #34d399;
+  --green-lo:  rgba(52,211,153,0.1);
+  --blue:      #60a5fa;
+  --text:      #eeeef8;
+  --text2:     #a0a0bc;
+  --muted:     #5a5a72;
+  --r:         12px;
+  --r-sm:      8px;
+  --r-xs:      6px;
 }
-*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-html { font-size: 16px; }
+*,*::before,*::after { box-sizing: border-box; margin: 0; padding: 0; }
+html { font-size: 16px; -webkit-tap-highlight-color: transparent; }
 body {
   font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
   background: var(--bg);
@@ -30,319 +39,485 @@ body {
   min-height: 100vh;
   overflow-x: hidden;
 }
+
+/* ── Scrollbar ── */
+::-webkit-scrollbar { width: 4px; height: 4px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: var(--border2); border-radius: 4px; }
+
+/* ── Layout ── */
 .app { display: flex; flex-direction: column; min-height: 100vh; }
 
 /* ── Header ── */
 header {
   background: var(--surface);
   border-bottom: 1px solid var(--border);
-  padding: 14px 20px;
+  padding: 12px 18px;
   display: flex; align-items: center; justify-content: space-between;
-  position: sticky; top: 0; z-index: 100;
+  position: sticky; top: 0; z-index: 200;
+  backdrop-filter: blur(12px);
 }
 .logo {
-  display: flex; align-items: center; gap: 10px;
-  font-size: 20px; font-weight: 800; letter-spacing: -0.5px; color: var(--text);
+  display: flex; align-items: center; gap: 8px;
+  font-size: 18px; font-weight: 800; letter-spacing: -0.4px; color: var(--text);
 }
-.logo-dot {
-  width: 10px; height: 10px; border-radius: 50%;
-  background: var(--accent); display: inline-block;
-  box-shadow: 0 0 8px var(--accent);
+.logo-icon {
+  width: 32px; height: 32px; border-radius: 9px;
+  background: linear-gradient(135deg, var(--accent), var(--accent2));
+  display: flex; align-items: center; justify-content: center;
+  font-size: 16px; flex-shrink: 0;
+  box-shadow: 0 0 16px rgba(124,110,245,0.35);
 }
 .header-count {
-  font-size: 13px; color: var(--muted);
+  font-size: 12px; color: var(--text2);
   background: var(--surface2); padding: 4px 12px; border-radius: 20px;
-  border: 1px solid var(--border);
+  border: 1px solid var(--border2); font-weight: 600; letter-spacing: 0.2px;
+  min-width: 80px; text-align: center;
 }
+
+/* ── Status Bar ── */
+#statusBar {
+  background: var(--surface);
+  border-bottom: 1px solid var(--border);
+  padding: 8px 18px;
+  display: flex; align-items: center; gap: 8px;
+  font-size: 12px; font-weight: 600; color: var(--muted);
+  min-height: 36px; transition: all 0.25s;
+  overflow: hidden;
+}
+#statusBar.idle    { color: var(--muted); }
+#statusBar.loading { color: var(--accent); border-bottom-color: rgba(124,110,245,0.3); }
+#statusBar.success { color: var(--green);  border-bottom-color: rgba(52,211,153,0.3); }
+#statusBar.error   { color: var(--danger); border-bottom-color: rgba(248,113,113,0.3); }
+#statusBar.warn    { color: var(--warn);   border-bottom-color: rgba(251,191,36,0.3); }
+.status-dot {
+  width: 7px; height: 7px; border-radius: 50%; flex-shrink: 0;
+  background: currentColor; transition: background 0.25s;
+}
+#statusBar.loading .status-dot {
+  animation: pulse 1.2s ease-in-out infinite;
+}
+@keyframes pulse {
+  0%,100% { opacity: 1; transform: scale(1); }
+  50%      { opacity: 0.4; transform: scale(0.7); }
+}
+#statusBar.loading .spin-sm { display: inline-block; }
+.spin-sm {
+  display: none;
+  width: 12px; height: 12px; flex-shrink: 0;
+  border: 2px solid rgba(124,110,245,0.3);
+  border-top-color: var(--accent);
+  border-radius: 50%;
+  animation: spin 0.65s linear infinite;
+}
+@keyframes spin { to { transform: rotate(360deg); } }
 
 /* ── Tabs ── */
 .tabs {
   display: flex;
   background: var(--surface);
   border-bottom: 1px solid var(--border);
-  padding: 0 16px; gap: 4px; overflow-x: auto;
+  padding: 0 14px; gap: 2px; overflow-x: auto;
 }
 .tabs::-webkit-scrollbar { display: none; }
 .tab {
-  padding: 12px 20px;
-  font-size: 14px; font-weight: 600; color: var(--muted);
+  padding: 11px 16px;
+  font-size: 13px; font-weight: 700; color: var(--muted);
   cursor: pointer; border-bottom: 2px solid transparent;
   white-space: nowrap; transition: color 0.15s, border-color 0.15s;
-  user-select: none;
+  user-select: none; display: flex; align-items: center; gap: 6px;
 }
 .tab.active { color: var(--accent); border-bottom-color: var(--accent); }
-.tab:hover:not(.active) { color: var(--text); }
+.tab:hover:not(.active) { color: var(--text2); }
+.tab-badge {
+  background: var(--accent-lo); color: var(--accent);
+  font-size: 10px; font-weight: 800; padding: 1px 6px;
+  border-radius: 10px; min-width: 18px; text-align: center;
+}
 
 /* ── Content ── */
-.content { flex: 1; padding: 20px; max-width: 640px; margin: 0 auto; width: 100%; }
-.section { display: none; }
+.content { flex: 1; padding: 16px; max-width: 680px; margin: 0 auto; width: 100%; }
+.section { display: none; animation: fadeIn 0.2s ease; }
 .section.active { display: block; }
+@keyframes fadeIn { from { opacity: 0; transform: translateY(4px); } to { opacity: 1; transform: translateY(0); } }
 
 /* ── Card ── */
 .card {
   background: var(--surface);
   border: 1px solid var(--border);
-  border-radius: var(--radius);
-  padding: 20px; margin-bottom: 16px;
+  border-radius: var(--r);
+  padding: 18px;
+  margin-bottom: 14px;
+}
+.card-title {
+  font-size: 13px; font-weight: 800; color: var(--text2);
+  text-transform: uppercase; letter-spacing: 0.8px;
+  margin-bottom: 14px;
+  display: flex; align-items: center; gap: 8px;
+}
+.card-title::before {
+  content: ''; display: block;
+  width: 3px; height: 14px; border-radius: 2px;
+  background: var(--accent);
 }
 
 /* ── Form ── */
-.field { margin-bottom: 14px; }
+.field { margin-bottom: 12px; }
 .field label {
-  display: block; font-size: 12px; font-weight: 700;
-  color: var(--muted); text-transform: uppercase;
+  display: block; font-size: 11px; font-weight: 800;
+  color: var(--text2); text-transform: uppercase;
   letter-spacing: 0.8px; margin-bottom: 6px;
 }
+.field-note {
+  font-size: 10px; color: var(--muted); font-weight: 400;
+  text-transform: none; letter-spacing: 0; margin-left: 4px;
+}
+.input-wrap { position: relative; }
 .field input {
   width: 100%;
   background: var(--surface2);
-  border: 1.5px solid var(--border);
-  border-radius: var(--radius-sm);
-  color: var(--text); font-size: 16px;
-  padding: 12px 14px; outline: none;
-  transition: border-color 0.15s;
+  border: 1.5px solid var(--border2);
+  border-radius: var(--r-sm);
+  color: var(--text); font-size: 15px;
+  padding: 11px 14px; outline: none;
+  transition: border-color 0.15s, box-shadow 0.15s;
   -webkit-appearance: none;
 }
-.field input:focus { border-color: var(--accent); }
+.field input:focus {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px rgba(124,110,245,0.12);
+}
 .field input::placeholder { color: var(--muted); font-size: 14px; }
 .field input.valid   { border-color: var(--green); }
 .field input.invalid { border-color: var(--danger); }
 
 .num-hint {
-  font-size: 12px; margin-top: 5px;
-  color: var(--muted); min-height: 16px; transition: color 0.15s;
+  font-size: 12px; margin-top: 5px; font-weight: 600;
+  color: var(--muted); min-height: 18px; transition: color 0.15s;
+  display: flex; align-items: center; gap: 5px;
 }
 .num-hint.ok  { color: var(--green); }
 .num-hint.bad { color: var(--danger); }
 .num-hint.dup { color: var(--warn); }
+.num-hint.checking { color: var(--accent); }
+
+/* ── Alert Banners ── */
+.banner {
+  display: none;
+  border-radius: var(--r-sm); padding: 11px 14px;
+  margin-bottom: 12px; font-size: 13px; font-weight: 600;
+  line-height: 1.5; border: 1.5px solid;
+}
+.banner.show { display: flex; align-items: flex-start; gap: 8px; }
+.banner-icon { font-size: 15px; flex-shrink: 0; margin-top: 1px; }
+.banner-warn  { background: var(--warn-lo);   border-color: var(--warn);   color: var(--warn); }
+.banner-error { background: var(--danger-lo); border-color: var(--danger); color: var(--danger); }
+.banner-info  { background: var(--accent-lo); border-color: var(--accent); color: var(--accent); }
 
 /* ── Toggles ── */
-.toggle-row {
-  display: grid; grid-template-columns: 1fr 1fr; gap: 10px;
-  margin-bottom: 14px;
-}
-.toggle-group label {
-  display: block; font-size: 12px; font-weight: 700;
-  color: var(--muted); text-transform: uppercase;
-  letter-spacing: 0.8px; margin-bottom: 6px;
-}
+.toggle-row { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 12px; }
+.toggle-group label { display: block; font-size: 11px; font-weight: 800; color: var(--text2); text-transform: uppercase; letter-spacing: 0.8px; margin-bottom: 6px; }
 .toggle-btns { display: flex; gap: 6px; }
 .toggle-btn {
-  flex: 1; padding: 9px 0; font-size: 13px; font-weight: 700;
-  border-radius: 8px; cursor: pointer;
-  border: 1.5px solid var(--border);
+  flex: 1; padding: 9px 0; font-size: 12px; font-weight: 800;
+  border-radius: 7px; cursor: pointer;
+  border: 1.5px solid var(--border2);
   background: var(--surface2); color: var(--muted);
   transition: all 0.15s; user-select: none; text-align: center;
 }
-.toggle-btn.yes.selected { background: rgba(52,211,153,0.15); border-color: var(--green); color: var(--green); }
-.toggle-btn.no.selected  { background: rgba(248,113,113,0.12); border-color: var(--danger); color: var(--danger); }
-.toggle-btn:hover:not(.selected) { border-color: var(--accent); color: var(--text); }
+.toggle-btn.yes.selected { background: var(--green-lo); border-color: var(--green); color: var(--green); }
+.toggle-btn.no.selected  { background: var(--danger-lo); border-color: var(--danger); color: var(--danger); }
+.toggle-btn:hover:not(.selected) { border-color: var(--accent); color: var(--text2); }
 
 /* ── Buttons ── */
-.btn-primary {
-  width: 100%; padding: 15px;
-  background: var(--accent); color: white;
-  border: none; border-radius: var(--radius-sm);
-  font-size: 16px; font-weight: 700;
+.btn {
+  width: 100%; padding: 13px;
+  border: none; border-radius: var(--r-sm);
+  font-size: 15px; font-weight: 800;
   cursor: pointer; transition: opacity 0.15s, transform 0.1s;
-  letter-spacing: 0.3px;
+  letter-spacing: 0.2px; display: flex; align-items: center; justify-content: center; gap: 8px;
 }
-.btn-primary:hover { opacity: 0.9; }
-.btn-primary:active { transform: scale(0.98); }
-.btn-primary:disabled { opacity: 0.4; cursor: not-allowed; transform: none; }
+.btn:active { transform: scale(0.98); }
+.btn:disabled { opacity: 0.38; cursor: not-allowed; transform: none !important; }
+.btn-primary { background: var(--accent); color: white; }
+.btn-primary:hover:not(:disabled) { opacity: 0.88; }
+.btn-success { background: var(--green); color: #0b0b10; }
+.btn-success:hover:not(:disabled) { opacity: 0.88; }
+.btn-outline {
+  background: transparent; color: var(--text2);
+  border: 1.5px solid var(--border2) !important;
+  font-size: 13px; padding: 9px;
+}
+.btn-outline:hover:not(:disabled) { border-color: var(--accent) !important; color: var(--accent); }
 
 .btn-vcf {
-  width: 100%; padding: 18px;
-  background: linear-gradient(135deg, var(--accent), var(--accent2));
-  color: white; border: none; border-radius: var(--radius);
-  font-size: 18px; font-weight: 800;
-  cursor: pointer; letter-spacing: 0.3px;
+  width: 100%; padding: 16px;
+  background: linear-gradient(135deg, var(--accent) 0%, #9f8aff 50%, var(--accent2) 100%);
+  color: white; border: none; border-radius: var(--r);
+  font-size: 16px; font-weight: 800;
+  cursor: pointer; letter-spacing: 0.2px;
   transition: opacity 0.15s, transform 0.1s;
-  box-shadow: 0 4px 20px rgba(124,110,245,0.3);
-  margin-top: 8px;
+  box-shadow: 0 4px 24px rgba(124,110,245,0.28);
+  display: flex; align-items: center; justify-content: center; gap: 8px;
 }
-.btn-vcf:hover { opacity: 0.92; }
+.btn-vcf:hover:not(:disabled) { opacity: 0.9; }
 .btn-vcf:active { transform: scale(0.98); }
-.btn-vcf:disabled { opacity: 0.4; cursor: not-allowed; transform: none; }
+.btn-vcf:disabled { opacity: 0.38; cursor: not-allowed; transform: none; }
+
+/* ── Spinner inside button ── */
+.btn-spin {
+  width: 16px; height: 16px; flex-shrink: 0;
+  border: 2.5px solid rgba(255,255,255,0.3);
+  border-top-color: white; border-radius: 50%;
+  animation: spin 0.65s linear infinite;
+}
 
 /* ── Toast ── */
 #toast {
-  position: fixed; bottom: 24px; left: 50%;
-  transform: translateX(-50%) translateY(100px);
-  background: var(--surface2); border: 1px solid var(--border);
-  color: var(--text); padding: 12px 22px; border-radius: 30px;
-  font-size: 14px; font-weight: 600;
-  z-index: 9999; transition: transform 0.3s cubic-bezier(.34,1.56,.64,1);
-  white-space: normal; max-width: calc(100vw - 40px); text-align: center;
-  pointer-events: none;
-  box-shadow: 0 8px 30px rgba(0,0,0,0.5);
+  position: fixed; bottom: 20px; left: 50%;
+  transform: translateX(-50%) translateY(110px);
+  background: var(--surface3); border: 1px solid var(--border2);
+  color: var(--text); padding: 11px 20px; border-radius: 28px;
+  font-size: 13px; font-weight: 700;
+  z-index: 9999; transition: transform 0.28s cubic-bezier(.34,1.56,.64,1);
+  white-space: normal; max-width: min(400px, calc(100vw - 32px)); text-align: center;
+  pointer-events: none; box-shadow: 0 8px 32px rgba(0,0,0,0.5);
+  display: flex; align-items: center; gap: 8px;
 }
 #toast.show    { transform: translateX(-50%) translateY(0); }
 #toast.success { border-color: var(--green);  color: var(--green); }
 #toast.error   { border-color: var(--danger); color: var(--danger); }
 #toast.warn    { border-color: var(--warn);   color: var(--warn); }
-
-/* ── Dup Banner ── */
-#dupBanner {
-  display: none;
-  background: rgba(251,191,36,0.1);
-  border: 1.5px solid var(--warn);
-  border-radius: var(--radius-sm);
-  padding: 12px 16px; margin-bottom: 14px;
-  font-size: 13px; color: var(--warn); font-weight: 600;
-}
-#dupBanner.show { display: block; }
+#toast.info    { border-color: var(--accent); color: var(--accent); }
 
 /* ── Search ── */
-.search-wrap { position: relative; margin-bottom: 16px; }
-.search-icon {
-  position: absolute; left: 14px; top: 50%;
+.search-wrap { position: relative; margin-bottom: 14px; }
+.search-icon-el {
+  position: absolute; left: 13px; top: 50%;
   transform: translateY(-50%);
-  color: var(--muted); font-size: 16px; pointer-events: none;
+  color: var(--muted); font-size: 14px; pointer-events: none;
 }
 #searchInput {
   width: 100%;
   background: var(--surface2);
-  border: 1.5px solid var(--border);
-  border-radius: var(--radius-sm);
-  color: var(--text); font-size: 16px;
-  padding: 12px 14px 12px 42px;
-  outline: none; transition: border-color 0.15s;
+  border: 1.5px solid var(--border2);
+  border-radius: var(--r-sm);
+  color: var(--text); font-size: 15px;
+  padding: 11px 14px 11px 38px;
+  outline: none; transition: border-color 0.15s, box-shadow 0.15s;
   -webkit-appearance: none;
 }
-#searchInput:focus { border-color: var(--accent); }
+#searchInput:focus { border-color: var(--accent); box-shadow: 0 0 0 3px rgba(124,110,245,0.12); }
+#searchInput::placeholder { color: var(--muted); }
+.search-meta {
+  font-size: 11px; color: var(--muted); margin-bottom: 10px; font-weight: 600;
+  min-height: 16px;
+}
 
 /* ── Contact list ── */
 .contact-item {
   background: var(--surface); border: 1px solid var(--border);
-  border-radius: var(--radius-sm); padding: 14px 16px;
-  margin-bottom: 8px; display: flex; align-items: center; gap: 12px;
+  border-radius: var(--r-sm); padding: 12px 14px;
+  margin-bottom: 7px; display: flex; align-items: center; gap: 12px;
+  transition: border-color 0.15s;
 }
+.contact-item:hover { border-color: var(--border2); }
 .contact-avatar {
-  width: 40px; height: 40px; border-radius: 50%;
+  width: 38px; height: 38px; border-radius: 50%;
   background: linear-gradient(135deg, var(--accent), var(--accent2));
   display: flex; align-items: center; justify-content: center;
-  font-size: 15px; font-weight: 800; color: white; flex-shrink: 0;
+  font-size: 14px; font-weight: 800; color: white; flex-shrink: 0;
   text-transform: uppercase;
 }
 .contact-info { flex: 1; min-width: 0; }
-.contact-name { font-size: 15px; font-weight: 700; color: var(--text); margin-bottom: 2px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.contact-num  { font-size: 13px; color: var(--muted); font-family: monospace; }
-.contact-meta { font-size: 11px; color: var(--muted); margin-top: 3px; }
-.contact-badges { display: flex; gap: 5px; margin-top: 5px; flex-wrap: wrap; }
+.contact-name { font-size: 14px; font-weight: 700; color: var(--text); margin-bottom: 2px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.contact-num  { font-size: 12px; color: var(--text2); font-family: 'Courier New', monospace; }
+.contact-meta { font-size: 11px; color: var(--muted); margin-top: 2px; }
+.contact-badges { display: flex; gap: 4px; margin-top: 5px; flex-wrap: wrap; }
 .badge {
-  font-size: 10px; font-weight: 700; padding: 2px 8px;
-  border-radius: 20px; text-transform: uppercase; letter-spacing: 0.5px;
+  font-size: 10px; font-weight: 800; padding: 2px 7px;
+  border-radius: 20px; letter-spacing: 0.4px; text-transform: uppercase;
 }
-.badge-sheet { background: rgba(124,110,245,0.15); color: var(--accent); }
-.badge-yes   { background: rgba(52,211,153,0.15);  color: var(--green); }
-.badge-no    { background: rgba(248,113,113,0.12); color: var(--danger); }
+.badge-sheet { background: var(--accent-lo); color: var(--accent); border: 1px solid rgba(124,110,245,0.25); }
+.badge-yes   { background: var(--green-lo);  color: var(--green);  border: 1px solid rgba(52,211,153,0.25); }
+.badge-no    { background: var(--danger-lo); color: var(--danger); border: 1px solid rgba(248,113,113,0.2); }
 
-.empty-state { text-align: center; padding: 60px 20px; color: var(--muted); }
-.empty-state .big { font-size: 48px; margin-bottom: 12px; }
-.empty-state p { font-size: 15px; }
+/* ── Empty / Loader ── */
+.empty-state { text-align: center; padding: 50px 20px; color: var(--muted); }
+.empty-state .big { font-size: 42px; margin-bottom: 10px; }
+.empty-state p { font-size: 14px; font-weight: 600; }
+.empty-state small { font-size: 12px; color: var(--muted); margin-top: 4px; display: block; }
+
+.list-loader {
+  text-align: center; padding: 36px; color: var(--muted); font-size: 13px; font-weight: 600;
+}
+.list-loader .spin-lg {
+  width: 28px; height: 28px; display: block; margin: 0 auto 10px;
+  border: 3px solid var(--border2); border-top-color: var(--accent);
+  border-radius: 50%; animation: spin 0.65s linear infinite;
+}
 
 /* ── VCF section ── */
-.vcf-hero { text-align: center; padding: 24px 0 20px; }
-.vcf-hero .emoji { font-size: 64px; display: block; margin-bottom: 12px; }
-.vcf-hero h2 { font-size: 22px; font-weight: 800; margin-bottom: 6px; }
-.vcf-hero p  { font-size: 14px; color: var(--muted); }
+.vcf-hero { text-align: center; padding: 20px 0 16px; }
+.vcf-hero .emoji { font-size: 52px; display: block; margin-bottom: 10px; }
+.vcf-hero h2 { font-size: 20px; font-weight: 800; margin-bottom: 4px; }
+.vcf-hero p  { font-size: 13px; color: var(--text2); }
 
-.stats-row { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin: 20px 0; }
+.stats-row { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin: 16px 0; }
 .stat-box {
-  background: var(--surface2); border: 1px solid var(--border);
-  border-radius: var(--radius-sm); padding: 14px 10px; text-align: center;
+  background: var(--surface2); border: 1px solid var(--border2);
+  border-radius: var(--r-sm); padding: 12px 8px; text-align: center;
 }
-.stat-val { font-size: 24px; font-weight: 800; color: var(--accent); }
-.stat-lbl { font-size: 11px; color: var(--muted); margin-top: 3px; font-weight: 600; text-transform: uppercase; }
+.stat-val { font-size: 22px; font-weight: 800; color: var(--accent); font-variant-numeric: tabular-nums; }
+.stat-lbl { font-size: 10px; color: var(--muted); margin-top: 2px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; }
 
 .vcf-preview-box {
   background: var(--surface2); border: 1px solid var(--border);
-  border-radius: var(--radius-sm); padding: 14px 16px;
-  font-family: monospace; font-size: 12px; color: var(--muted);
-  max-height: 160px; overflow-y: auto; white-space: pre; margin-top: 16px;
+  border-radius: var(--r-sm); padding: 12px 14px;
+  font-family: 'Courier New', monospace; font-size: 11px; color: var(--text2);
+  max-height: 140px; overflow-y: auto; white-space: pre; margin-top: 14px;
 }
 
 /* ── Setup banner ── */
 #setupBanner {
-  background: rgba(248,113,113,0.1);
-  border: 1.5px solid var(--danger);
-  border-radius: var(--radius-sm);
-  padding: 14px 16px; margin-bottom: 16px;
-  font-size: 13px; color: var(--danger); font-weight: 600;
-  display: none;
+  background: var(--danger-lo); border: 1.5px solid var(--danger);
+  border-radius: var(--r-sm); padding: 13px 15px; margin-bottom: 14px;
+  font-size: 13px; color: var(--danger); font-weight: 600; display: none;
 }
 #setupBanner.show { display: block; }
 
-/* ── Spinner ── */
-.spin {
-  display: inline-block; width: 18px; height: 18px;
-  border: 2.5px solid rgba(255,255,255,0.3);
-  border-top-color: white; border-radius: 50%;
-  animation: spin 0.6s linear infinite;
-  vertical-align: middle; margin-right: 8px;
+/* ── Database Tab ── */
+.db-toolbar {
+  display: flex; align-items: center; gap: 8px; margin-bottom: 14px; flex-wrap: wrap;
 }
-@keyframes spin { to { transform: rotate(360deg); } }
-
-.list-loader { text-align: center; padding: 40px; color: var(--muted); font-size: 14px; }
-.list-loader .spin {
-  border-color: var(--border); border-top-color: var(--accent);
-  width: 28px; height: 28px; display: block; margin: 0 auto 12px;
+.db-toolbar .search-wrap { flex: 1; min-width: 180px; margin-bottom: 0; }
+.btn-sm {
+  padding: 9px 14px; font-size: 12px; font-weight: 800;
+  border: none; border-radius: var(--r-sm); cursor: pointer;
+  transition: opacity 0.15s; white-space: nowrap;
+  display: flex; align-items: center; gap: 5px;
 }
+.btn-sm:hover { opacity: 0.85; }
+.btn-sm.primary { background: var(--accent); color: white; }
+.btn-sm.danger  { background: transparent; color: var(--danger); border: 1.5px solid var(--danger-lo); }
+.db-meta {
+  font-size: 11px; color: var(--muted); font-weight: 600;
+  margin-bottom: 10px; min-height: 16px;
+}
+.db-table-wrap {
+  overflow-x: auto; border-radius: var(--r-sm); border: 1px solid var(--border);
+  margin-bottom: 12px; max-height: 55vh; overflow-y: auto;
+}
+table { width: 100%; border-collapse: collapse; font-size: 13px; }
+thead { position: sticky; top: 0; z-index: 10; }
+th {
+  background: var(--surface3); color: var(--text2);
+  font-size: 10px; font-weight: 800; text-transform: uppercase;
+  letter-spacing: 0.7px; padding: 10px 12px; text-align: left;
+  border-bottom: 1px solid var(--border2); white-space: nowrap;
+}
+td {
+  padding: 10px 12px; border-bottom: 1px solid var(--border);
+  color: var(--text2); vertical-align: middle;
+}
+tr:last-child td { border-bottom: none; }
+tr:hover td { background: var(--surface2); }
+.td-name { font-weight: 700; color: var(--text); }
+.td-num  { font-family: 'Courier New', monospace; font-size: 12px; color: var(--accent2); }
+.td-auto { color: var(--muted); font-style: italic; }
+.db-pdf-row { display: flex; gap: 8px; flex-wrap: wrap; }
 
-@media (max-width: 400px) {
+/* ── Progress overlay ── */
+#overlay {
+  display: none; position: fixed; inset: 0; z-index: 500;
+  background: rgba(11,11,16,0.7); backdrop-filter: blur(4px);
+  align-items: center; justify-content: center;
+}
+#overlay.show { display: flex; }
+.overlay-box {
+  background: var(--surface); border: 1px solid var(--border2);
+  border-radius: var(--r); padding: 28px 32px;
+  text-align: center; min-width: 220px;
+}
+.overlay-spin {
+  width: 40px; height: 40px; border: 4px solid var(--border2);
+  border-top-color: var(--accent); border-radius: 50%;
+  animation: spin 0.7s linear infinite; margin: 0 auto 14px;
+}
+.overlay-msg { font-size: 14px; font-weight: 700; color: var(--text2); }
+.overlay-sub { font-size: 12px; color: var(--muted); margin-top: 4px; }
+
+@media (max-width: 420px) {
   .toggle-row { grid-template-columns: 1fr; }
-  .content { padding: 16px; }
+  .content { padding: 12px; }
+  .db-toolbar { gap: 6px; }
 }
 </style>
 </head>
 <body>
 <div class="app">
 
+<!-- ── Header ── -->
 <header>
   <div class="logo">
-    <span class="logo-dot"></span>
+    <div class="logo-icon">📇</div>
     Tiffo Contacts
   </div>
-  <div class="header-count" id="headerCount">—</div>
+  <div class="header-count" id="headerCount">Loading…</div>
 </header>
 
+<!-- ── Status Bar ── -->
+<div id="statusBar" class="idle">
+  <div class="status-dot"></div>
+  <div class="spin-sm"></div>
+  <span id="statusMsg">Ready</span>
+</div>
+
+<!-- ── Tabs ── -->
 <div class="tabs">
   <div class="tab active" data-tab="add"    onclick="switchTab('add')">➕ Add</div>
   <div class="tab"        data-tab="search" onclick="switchTab('search')">🔍 Search</div>
-  <div class="tab"        data-tab="vcf"    onclick="switchTab('vcf')">📇 VCF</div>
+  <div class="tab"        data-tab="db"     onclick="switchTab('db')">🗄️ Database <span class="tab-badge" id="dbBadge">—</span></div>
+  <div class="tab"        data-tab="vcf"    onclick="switchTab('vcf')">📥 VCF</div>
 </div>
 
 <div class="content">
 
-  <!-- ── ADD ── -->
+  <!-- ═══ ADD ═══ -->
   <div class="section active" id="tab-add">
-    <div id="setupBanner">⚠️ GAS_URL set nahi hai — Code.gs deploy karo aur URL fill karo</div>
+    <div id="setupBanner">⚠️ GAS_URL not configured — deploy Code.gs and paste the URL below</div>
+
     <div class="card">
-      <div id="dupBanner"></div>
+      <div class="card-title">New Contact</div>
+
+      <!-- Dup banner -->
+      <div class="banner banner-warn" id="dupBanner">
+        <span class="banner-icon">⚠️</span>
+        <span id="dupBannerMsg">This number already exists.</span>
+      </div>
 
       <div class="field">
-        <label>Name <span style="color:var(--muted);font-size:10px;font-weight:400;text-transform:none">(optional — blank rakho toh VCF mein sirf "Tiffo" banega)</span></label>
+        <label>Name <span class="field-note">(optional — blank will use "New + last 5 digits" in VCF)</span></label>
         <input type="text" id="inpName" placeholder="e.g. Rahul Kumar" autocomplete="off"/>
       </div>
 
       <div class="field">
-        <label>Mobile Number *</label>
-        <input type="tel" id="inpNum" placeholder="9876543210"
-               autocomplete="off" inputmode="numeric" maxlength="20"/>
+        <label>Mobile Number <span style="color:var(--danger)">*</span></label>
+        <input type="tel" id="inpNum" placeholder="9876543210 or +91 98765 43210"
+               autocomplete="off" inputmode="numeric" maxlength="25"/>
         <div class="num-hint" id="numHint"></div>
       </div>
 
       <div class="toggle-row">
         <div class="toggle-group">
-          <label>Account Created <span style="color:var(--muted);font-size:10px;font-weight:400;text-transform:none">(optional)</span></label>
+          <label>Account Created <span class="field-note">(optional)</span></label>
           <div class="toggle-btns">
             <div class="toggle-btn yes" data-group="ac" data-val="Yes" onclick="toggleSelect(this)">Yes</div>
             <div class="toggle-btn no"  data-group="ac" data-val="No"  onclick="toggleSelect(this)">No</div>
           </div>
         </div>
         <div class="toggle-group">
-          <label>Monthly Plan <span style="color:var(--muted);font-size:10px;font-weight:400;text-transform:none">(optional)</span></label>
+          <label>Monthly Plan <span class="field-note">(optional)</span></label>
           <div class="toggle-btns">
             <div class="toggle-btn yes" data-group="mp" data-val="Yes" onclick="toggleSelect(this)">Yes</div>
             <div class="toggle-btn no"  data-group="mp" data-val="No"  onclick="toggleSelect(this)">No</div>
@@ -350,34 +525,73 @@ header {
         </div>
       </div>
 
-      <button class="btn-primary" id="btnSave" onclick="saveContact()">
+      <button class="btn btn-primary" id="btnSave" onclick="saveContact()">
         Save Contact
       </button>
     </div>
   </div>
 
-  <!-- ── SEARCH ── -->
+  <!-- ═══ SEARCH ═══ -->
   <div class="section" id="tab-search">
     <div class="search-wrap">
-      <span class="search-icon">🔍</span>
-      <input type="search" id="searchInput" placeholder="Naam ya number type karo…"
+      <span class="search-icon-el">🔍</span>
+      <input type="search" id="searchInput" placeholder="Name or number…"
              oninput="onSearch(this.value)" onsearch="onSearch(this.value)" autocomplete="off"/>
     </div>
+    <div class="search-meta" id="searchMeta"></div>
     <div id="searchResults">
       <div class="empty-state">
         <div class="big">🔍</div>
-        <p>Koi bhi naam ya number type karo</p>
+        <p>Type a name or number to search</p>
       </div>
     </div>
   </div>
 
-  <!-- ── VCF ── -->
+  <!-- ═══ DATABASE ═══ -->
+  <div class="section" id="tab-db">
+    <div class="db-toolbar">
+      <div class="search-wrap" style="flex:1;min-width:150px">
+        <span class="search-icon-el">🔍</span>
+        <input type="search" id="dbSearch" placeholder="Filter…"
+               oninput="filterDB(this.value)" autocomplete="off"
+               style="padding-left:34px;padding-top:9px;padding-bottom:9px;font-size:13px;
+                      width:100%;background:var(--surface2);border:1.5px solid var(--border2);
+                      border-radius:var(--r-sm);color:var(--text);outline:none;-webkit-appearance:none"/>
+      </div>
+      <button class="btn-sm primary" onclick="loadDB()">↺ Refresh</button>
+      <button class="btn-sm primary" onclick="exportPDF()" id="btnPDF">📄 PDF</button>
+    </div>
+    <div class="db-meta" id="dbMeta">—</div>
+
+    <div class="db-table-wrap">
+      <table id="dbTable">
+        <thead>
+          <tr>
+            <th>#</th>
+            <th>Name</th>
+            <th>Number</th>
+            <th>Sheet</th>
+            <th>AC</th>
+            <th>MP</th>
+            <th>Added</th>
+          </tr>
+        </thead>
+        <tbody id="dbBody">
+          <tr><td colspan="7">
+            <div class="empty-state"><div class="big">🗄️</div><p>Open this tab to load database</p></div>
+          </td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- ═══ VCF ═══ -->
   <div class="section" id="tab-vcf">
     <div class="card">
       <div class="vcf-hero">
-        <span class="emoji">📇</span>
+        <span class="emoji">📥</span>
         <h2>Generate VCF</h2>
-        <p>Sabhi sheets ke contacts ek file mein — phone mein directly import karo</p>
+        <p>All contacts → one file → import to any phone</p>
       </div>
       <div class="stats-row">
         <div class="stat-box">
@@ -400,115 +614,219 @@ header {
     </div>
   </div>
 
-</div>
-</div>
+</div><!-- /content -->
+</div><!-- /app -->
+
+<!-- ── Toast ── -->
 <div id="toast"></div>
 
+<!-- ── Loading Overlay ── -->
+<div id="overlay">
+  <div class="overlay-box">
+    <div class="overlay-spin"></div>
+    <div class="overlay-msg" id="overlayMsg">Please wait…</div>
+    <div class="overlay-sub" id="overlaySub"></div>
+  </div>
+</div>
+
 <script>
-// ─── CONFIG ───────────────────────────────────────────────
-// ⚠️ Apna GAS Web App URL yahan paste karo
+// ═══════════════════════════════════════════════════════
+// CONFIG
+// ═══════════════════════════════════════════════════════
 const GAS_URL = 'https://script.google.com/macros/s/AKfycbx1l8aPWMbCHyqDfHkickJDrbsKH88U0oe00Esp9kolNC8zcbg5JUZXVvBwRNxKEIet/exec';
 
-// ─── GAS bridge with timeout ──────────────────────────────
-async function gas(action, payload = {}) {
-  if (GAS_URL === 'YOUR_GAS_WEB_APP_URL_HERE') {
-    throw new Error('GAS_URL set nahi hai');
-  }
-  const controller = new AbortController();
-  const timer = setTimeout(() => controller.abort(), 15000); // 15s timeout
-  try {
-    const r = await fetch(GAS_URL, {
-      method: 'POST',
-      headers: { 'Content-Type': 'text/plain' },
-      body: JSON.stringify({ action, ...payload }),
-      signal: controller.signal
-    });
-    clearTimeout(timer);
-    const json = await r.json();
-    if (!json.success) throw new Error(json.message || 'Server error');
-    return json;
-  } catch(e) {
-    clearTimeout(timer);
-    if (e.name === 'AbortError') throw new Error('Timeout — GAS slow hai, retry karo');
-    throw e;
-  }
-}
-
-// ─── Utilities ────────────────────────────────────────────
-function normalizeNumber(raw) {
-  if (!raw) return null;
-  let s = raw.toString().replace(/[\s\-\(\)\+]/g, '').replace(/[^0-9]/g, '');
-  if (s.length === 12 && s.startsWith('91')) s = s.slice(2);
-  else if (s.length === 11 && s.startsWith('0')) s = s.slice(1);
-  return (s.length === 10 && /^[6-9]/.test(s)) ? s : null;
-}
-
-// Auto-name: blank store karo sheet mein, VCF mein "Tiffo" banega
-// But UI display ke liye temp label chahiye
-function autoLabel(num) { return 'New' + num.slice(-5); }
-
-function vcfDateStr() {
-  const d = new Date();
-  const months = ['January','February','March','April','May','June',
-                  'July','August','September','October','November','December'];
-  return String(d.getDate()).padStart(2,'0') + months[d.getMonth()] + d.getFullYear();
-}
-
-function avatarLetter(name) {
-  if (!name) return '#';
-  return name.trim()[0].toUpperCase();
-}
-
-function esc(s) {
-  return String(s || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
-}
-
-// ─── Toast ────────────────────────────────────────────────
+// ═══════════════════════════════════════════════════════
+// STATE
+// ═══════════════════════════════════════════════════════
+let _totalCount  = -1;   // -1 = unknown (boot hasn't completed)
+let _dbLoaded    = false;
+let _allContacts = [];
+let _statusTimer;
 let _toastTimer;
-function toast(msg, type = 'success', duration = 3000) {
+let _dupCheckTimer, _dupCheckReq = 0;
+let _searchTimer,   _searchReq   = 0;
+let _loadedScripts = {};
+function setStatus(msg, type = 'idle', autoClear = 0) {
+  const bar = document.getElementById('statusBar');
+  const msgEl = document.getElementById('statusMsg');
+  bar.className = type;
+  msgEl.textContent = msg;
+  clearTimeout(_statusTimer);
+  if (autoClear > 0) {
+    _statusTimer = setTimeout(() => setStatus('Ready', 'idle'), autoClear);
+  }
+}
+
+// ═══════════════════════════════════════════════════════
+// OVERLAY
+// ═══════════════════════════════════════════════════════
+function showOverlay(msg, sub = '') {
+  document.getElementById('overlayMsg').textContent = msg;
+  document.getElementById('overlaySub').textContent = sub;
+  document.getElementById('overlay').classList.add('show');
+}
+function hideOverlay() {
+  document.getElementById('overlay').classList.remove('show');
+}
+
+// ═══════════════════════════════════════════════════════
+// TOAST
+// ═══════════════════════════════════════════════════════
+function toast(msg, type = 'success', duration = 3200) {
   const el = document.getElementById('toast');
-  el.textContent = msg;
+  const icons = { success: '✓', error: '✕', warn: '⚠', info: 'ℹ' };
+  el.innerHTML = `<span>${icons[type] || ''}</span><span>${esc(msg)}</span>`;
   el.className = 'show ' + type;
   clearTimeout(_toastTimer);
   _toastTimer = setTimeout(() => { el.className = ''; }, duration);
 }
 
-// ─── Tab switching ────────────────────────────────────────
+// ═══════════════════════════════════════════════════════
+// GAS BRIDGE
+// ═══════════════════════════════════════════════════════
+async function gas(action, payload = {}) {
+  if (GAS_URL === 'YOUR_GAS_WEB_APP_URL_HERE') throw new Error('GAS_URL not configured');
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), 18000);
+  let r;
+  try {
+    r = await fetch(GAS_URL, {
+      method: 'POST',
+      headers: { 'Content-Type': 'text/plain' },
+      body: JSON.stringify({ action, ...payload }),
+      signal: controller.signal
+    });
+  } catch(e) {
+    clearTimeout(timer);
+    if (e.name === 'AbortError') throw new Error('Request timed out — GAS is slow, please retry');
+    throw new Error('Network error — check internet connection');
+  }
+  clearTimeout(timer);
+  if (!r.ok) throw new Error(`Server returned HTTP ${r.status} — check GAS deployment`);
+  let json;
+  try {
+    json = await r.json();
+  } catch(e) {
+    throw new Error('Invalid response from server — GAS may not be deployed correctly');
+  }
+  if (!json.success) throw new Error(json.message || 'Server returned an error');
+  return json;
+}
+
+// ═══════════════════════════════════════════════════════
+// NUMBER NORMALIZER — handles ALL formats:
+//   +91 98765 43210 | 91 9876543210 | 09876543210
+//   9876 5432 10 | 987  657    7654 | +919876543210
+// ═══════════════════════════════════════════════════════
+function normalizeNumber(raw) {
+  if (!raw) return null;
+  // Strip ALL whitespace, dashes, dots, parens, plus signs
+  let s = String(raw).replace(/[\s\-\.\(\)\+]/g, '').replace(/[^0-9]/g, '');
+  if (!s) return null;
+  // Remove country code variants
+  if (s.length === 13 && s.startsWith('091')) s = s.slice(3);      // 091 prefix
+  else if (s.length === 12 && s.startsWith('91')) s = s.slice(2);  // 91 prefix
+  else if (s.length === 11 && s.startsWith('0')) s = s.slice(1);   // 0 prefix
+  // Must be exactly 10 digits starting with 6,7,8,9
+  return (s.length === 10 && /^[6-9]/.test(s)) ? s : null;
+}
+
+// Format for display
+function formatNum(num) { return '+91 ' + num.slice(0,5) + ' ' + num.slice(5); }
+
+// ═══════════════════════════════════════════════════════
+// DISPLAY NAME — blank / null / only special chars → "New + last 5"
+// ═══════════════════════════════════════════════════════
+function getDisplayName(rawName, num) {
+  if (!rawName) return null;
+  const cleaned = String(rawName).replace(/[\s\-\_\.\,\;\:\!\?\*\+\=\#\@\&\%\^\/\\|~`'"<>(){}\[\]…—–]/g, '').trim();
+  if (!cleaned) return null;
+  return rawName.trim();
+}
+
+function vcfName(rawName, num) {
+  const display = getDisplayName(rawName, num);
+  if (!display) return 'Tiffo - New' + String(num).slice(-5);
+  return 'Tiffo - ' + display;
+}
+
+// ═══════════════════════════════════════════════════════
+// UTILITIES
+// ═══════════════════════════════════════════════════════
+function vcfDateStr() {
+  const d = new Date();
+  const m = ['January','February','March','April','May','June','July','August','September','October','November','December'];
+  return String(d.getDate()).padStart(2,'0') + m[d.getMonth()] + d.getFullYear();
+}
+
+function avatarLetter(name, num) {
+  const dn = getDisplayName(name, num);
+  if (!dn) return num ? num.slice(-2) : '#';
+  return dn.trim()[0].toUpperCase();
+}
+
+function esc(s) {
+  return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+function escVcf(s) {
+  return s.replace(/[\r\n\t]/g,' ').replace(/\\/g,'\\\\').replace(/;/g,'\\;').replace(/,/g,'\\,');
+}
+
+function timeAgo(dateStr) {
+  if (!dateStr) return '';
+  try {
+    const d = new Date(dateStr);
+    const diff = Date.now() - d.getTime();
+    const mins = Math.floor(diff/60000);
+    if (mins < 1) return 'just now';
+    if (mins < 60) return mins + 'm ago';
+    const hrs = Math.floor(mins/60);
+    if (hrs < 24) return hrs + 'h ago';
+    const days = Math.floor(hrs/24);
+    if (days < 30) return days + 'd ago';
+    return d.toLocaleDateString('en-IN', {day:'2-digit',month:'short',year:'numeric'});
+  } catch { return dateStr; }
+}
+
+// ═══════════════════════════════════════════════════════
+// TAB SWITCHING
+// ═══════════════════════════════════════════════════════
 function switchTab(name) {
-  document.querySelectorAll('.tab').forEach(t =>
-    t.classList.toggle('active', t.dataset.tab === name));
+  document.querySelectorAll('.tab').forEach(t => t.classList.toggle('active', t.dataset.tab === name));
   document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
   document.getElementById('tab-' + name).classList.add('active');
   if (name === 'vcf') loadVCFStats();
+  if (name === 'db' && !_dbLoaded) loadDB();
 }
 
-// ─── Toggle buttons ───────────────────────────────────────
+// ═══════════════════════════════════════════════════════
+// TOGGLES
+// ═══════════════════════════════════════════════════════
 function toggleSelect(el) {
   const group = el.dataset.group;
-  const wasSelected = el.classList.contains('selected');
-  document.querySelectorAll(`.toggle-btn[data-group="${group}"]`)
-    .forEach(b => b.classList.remove('selected'));
-  if (!wasSelected) el.classList.add('selected'); // second click = off
+  const was = el.classList.contains('selected');
+  document.querySelectorAll(`.toggle-btn[data-group="${group}"]`).forEach(b => b.classList.remove('selected'));
+  if (!was) el.classList.add('selected');
 }
-
 function getToggle(group) {
   const sel = document.querySelector(`.toggle-btn[data-group="${group}"].selected`);
   return sel ? sel.dataset.val : '';
 }
 
-// ─── Number live validation + dup check ──────────────────
-let _dupCheckTimer;
-document.getElementById('inpNum').addEventListener('input', function () {
+// ═══════════════════════════════════════════════════════
+// NUMBER LIVE VALIDATION + DUP CHECK
+// ═══════════════════════════════════════════════════════
+
+document.getElementById('inpNum').addEventListener('input', function() {
   const hint   = document.getElementById('numHint');
   const banner = document.getElementById('dupBanner');
-
-  // Reset dup banner on every keystroke
-  banner.className = '';
-  banner.textContent = '';
-
   const raw = this.value;
-  if (!raw) {
-    this.classList.remove('valid', 'invalid');
+
+  banner.classList.remove('show');
+
+  if (!raw.trim()) {
+    this.classList.remove('valid','invalid');
     hint.textContent = '';
     hint.className = 'num-hint';
     clearTimeout(_dupCheckTimer);
@@ -517,260 +835,478 @@ document.getElementById('inpNum').addEventListener('input', function () {
 
   const num = normalizeNumber(raw);
   if (!num) {
-    this.classList.remove('valid');
-    this.classList.add('invalid');
-    hint.textContent = '✗ Invalid — 10-digit Indian number chahiye';
+    this.classList.remove('valid'); this.classList.add('invalid');
+    hint.innerHTML = '✗ Invalid — needs a 10-digit Indian mobile number';
     hint.className = 'num-hint bad';
     clearTimeout(_dupCheckTimer);
     return;
   }
 
-  // Valid number
-  this.classList.remove('invalid');
-  this.classList.add('valid');
-  hint.textContent = '✓ +91 ' + num;
+  // Valid
+  this.classList.remove('invalid'); this.classList.add('valid');
+  hint.innerHTML = `✓ Will save as ${formatNum(num)}`;
   hint.className = 'num-hint ok';
 
-  // Debounced duplicate check
+  // Debounced dup check
   clearTimeout(_dupCheckTimer);
+  const reqId = ++_dupCheckReq;
+  hint.innerHTML = `<span class="spin-sm" style="display:inline-block;border-color:var(--border2);border-top-color:var(--accent)"></span> Checking database…`;
+  hint.className = 'num-hint checking';
+
   _dupCheckTimer = setTimeout(async () => {
     try {
+      setStatus('Checking for duplicate…', 'loading');
       const res = await gas('checkDuplicate', { number: num });
+      if (reqId !== _dupCheckReq) return;
+      setStatus('Ready', 'idle');
+
       if (res.duplicate) {
-        const who = res.name ? `"${res.name}"` : 'Ek contact';
-        banner.textContent = `⚠️ ${who} is number se already save hai (${res.sheet})`;
-        banner.className = 'show';
-        hint.textContent = '✗ Already exists';
+        const who = res.name ? `"${res.name}"` : 'A contact';
+        document.getElementById('dupBannerMsg').textContent =
+          `${who} is already saved with this number (${res.sheet})`;
+        banner.classList.add('show');
+        hint.innerHTML = `✗ Already in database (${res.sheet})`;
         hint.className = 'num-hint dup';
         document.getElementById('inpNum').classList.remove('valid');
         document.getElementById('inpNum').classList.add('invalid');
+      } else {
+        hint.innerHTML = `✓ Will save as ${formatNum(num)}`;
+        hint.className = 'num-hint ok';
       }
-    } catch (e) { /* silent — offline ya URL issue */ }
-  }, 600);
+    } catch(e) {
+      if (reqId !== _dupCheckReq) return;
+      hint.innerHTML = `✓ Will save as ${formatNum(num)}`;
+      hint.className = 'num-hint ok';
+      setStatus('Ready', 'idle');
+    }
+  }, 650);
 });
 
-// ─── Save Contact ─────────────────────────────────────────
+// ═══════════════════════════════════════════════════════
+// SAVE CONTACT
+// ═══════════════════════════════════════════════════════
+
 async function saveContact() {
   const rawNum = document.getElementById('inpNum').value.trim();
-  const num = normalizeNumber(rawNum);
+  const num    = normalizeNumber(rawNum);
 
   if (!num) {
-    toast('Valid 10-digit number daalo', 'error');
+    toast('Enter a valid 10-digit Indian mobile number', 'error');
     document.getElementById('inpNum').focus();
     return;
   }
-
-  // If dup banner already showing, block save
   if (document.getElementById('dupBanner').classList.contains('show')) {
-    toast('Yeh number already save hai!', 'warn');
+    toast('This number is already in the database!', 'warn');
     return;
   }
 
-  const name = document.getElementById('inpName').value.trim();
-  // Blank name → empty string in sheet (VCF me "Tiffo" banega, not "Tiffo - New98765")
-  const ac = getToggle('ac');
-  const mp = getToggle('mp');
+  const rawName = document.getElementById('inpName').value.trim();
+  const name    = rawName || '';
+  const ac      = getToggle('ac');
+  const mp      = getToggle('mp');
 
   const btn = document.getElementById('btnSave');
   btn.disabled = true;
-  btn.innerHTML = '<span class="spin"></span>Saving…';
+  btn.innerHTML = '<div class="btn-spin"></div> Saving to database…';
+  setStatus('Saving contact to database…', 'loading');
 
   try {
     const res = await gas('addContact', { name, number: num, accountCreated: ac, monthlyPlan: mp });
-    toast(`✅ Saved in ${res.sheet}`, 'success');
 
-    // Reset form fully
+    setStatus(`Saved — ${res.sheet}`, 'success', 4000);
+    toast(`Contact saved to "${res.sheet}"`, 'success');
+
+    // Reset form
     document.getElementById('inpName').value = '';
     document.getElementById('inpNum').value = '';
-    document.getElementById('inpNum').classList.remove('valid', 'invalid');
+    document.getElementById('inpNum').classList.remove('valid','invalid');
     document.getElementById('numHint').textContent = '';
     document.getElementById('numHint').className = 'num-hint';
-    document.getElementById('dupBanner').className = '';
-    document.getElementById('dupBanner').textContent = '';
+    document.getElementById('dupBanner').classList.remove('show');
     document.querySelectorAll('.toggle-btn').forEach(b => b.classList.remove('selected'));
 
-    // Increment header count (only if we have a valid baseline)
     if (_totalCount >= 0) {
       _totalCount++;
-      document.getElementById('headerCount').textContent = _totalCount + ' contacts';
+      document.getElementById('headerCount').textContent = _totalCount.toLocaleString('en-IN') + ' contacts';
+      document.getElementById('dbBadge').textContent = _totalCount.toLocaleString('en-IN');
     }
+    _dbLoaded = false; // force DB refresh next time
 
     document.getElementById('inpName').focus();
-  } catch (e) {
-    // Duplicate caught by server (race condition — someone else added between check and save)
-    if (e.message.toLowerCase().includes('already')) {
-      document.getElementById('dupBanner').textContent = '⚠️ ' + e.message;
-      document.getElementById('dupBanner').className = 'show';
-      toast('Already save hai!', 'warn');
+  } catch(e) {
+    if (e.message.toLowerCase().includes('already') || e.message.toLowerCase().includes('duplicate')) {
+      document.getElementById('dupBannerMsg').textContent = e.message;
+      document.getElementById('dupBanner').classList.add('show');
+      toast('This number is already saved!', 'warn');
+      setStatus('Duplicate — not saved', 'warn', 4000);
     } else {
       toast(e.message, 'error', 5000);
+      setStatus('Error: ' + e.message, 'error', 6000);
     }
+  } finally {
+    btn.disabled = false;
+    btn.innerHTML = 'Save Contact';
   }
-
-  btn.disabled = false;
-  btn.textContent = 'Save Contact';
 }
 
-// ─── Header count ─────────────────────────────────────────
-let _totalCount = -1; // -1 = unknown (boot failed)
+// ═══════════════════════════════════════════════════════
+// SEARCH
+// ═══════════════════════════════════════════════════════
 
-// ─── Search ───────────────────────────────────────────────
-let _searchTimer;
-let _searchReq = 0; // request counter — stale responses discard karo
 function onSearch(val) {
   clearTimeout(_searchTimer);
   const results = document.getElementById('searchResults');
+  const meta    = document.getElementById('searchMeta');
   if (!val.trim()) {
-    results.innerHTML = `<div class="empty-state"><div class="big">🔍</div><p>Koi bhi naam ya number type karo</p></div>`;
+    meta.textContent = '';
+    results.innerHTML = `<div class="empty-state"><div class="big">🔍</div><p>Type a name or number to search</p></div>`;
     return;
   }
-  results.innerHTML = `<div class="list-loader"><div class="spin"></div>Searching…</div>`;
-  _searchTimer = setTimeout(() => doSearch(val.trim()), 400);
+  results.innerHTML = `<div class="list-loader"><div class="spin-lg"></div>Searching database…</div>`;
+  meta.textContent = '';
+  _searchTimer = setTimeout(() => doSearch(val.trim()), 380);
 }
 
 async function doSearch(query) {
   const results = document.getElementById('searchResults');
-  const reqId = ++_searchReq; // snapshot this request's ID
-  // Also try normalized form of query (e.g. user types '09876...' or '+91 98...')
-  const normQuery = normalizeNumber(query) || '';
+  const meta    = document.getElementById('searchMeta');
+  const reqId   = ++_searchReq;
+  const normQ   = normalizeNumber(query) || '';
+  setStatus('Searching…', 'loading');
   try {
-    const res = await gas('search', { query, normQuery });
-    if (reqId !== _searchReq) return; // stale — newer request already fired
-    renderContacts(res.contacts, results);
-  } catch (e) {
+    const res = await gas('search', { query, normQuery: normQ });
     if (reqId !== _searchReq) return;
+    setStatus('Ready', 'idle');
+    const n = res.contacts.length;
+    meta.textContent = n > 0 ? `${n} result${n===1?'':'s'} found` : '';
+    renderContacts(res.contacts, results);
+  } catch(e) {
+    if (reqId !== _searchReq) return;
+    setStatus('Search error', 'error', 4000);
     results.innerHTML = `<div class="empty-state"><div class="big">⚠️</div><p>${esc(e.message)}</p></div>`;
   }
 }
 
 function renderContacts(contacts, container) {
   if (!contacts.length) {
-    container.innerHTML = `<div class="empty-state"><div class="big">😶</div><p>Koi contact nahi mila</p></div>`;
+    container.innerHTML = `<div class="empty-state"><div class="big">😶</div><p>No contacts found</p><small>Try a different name or number</small></div>`;
     return;
   }
   container.innerHTML = contacts.map(c => {
-    const displayName = c.name || autoLabel(c.number);
-    const letter = avatarLetter(displayName);
-    const ac = (c.accountCreated || '').trim();
-    const mp = (c.monthlyPlan || '').trim();
-    const dateAdded = c.dateAdded ? `<div class="contact-meta">${esc(c.dateAdded)}</div>` : '';
+    const num = c.number || '';
+    const dn  = getDisplayName(c.name, num) || ('New' + num.slice(-5));
+    const ltr = avatarLetter(c.name, num);
+    const ac  = (c.accountCreated||'').trim();
+    const mp  = (c.monthlyPlan||'').trim();
+    const dt  = timeAgo(c.dateAdded);
+    const fmtNum = num ? formatNum(num) : '—';
     return `<div class="contact-item">
-      <div class="contact-avatar">${esc(letter)}</div>
+      <div class="contact-avatar">${esc(ltr)}</div>
       <div class="contact-info">
-        <div class="contact-name">${esc(displayName)}</div>
-        <div class="contact-num">+91 ${esc(c.number)}</div>
-        ${dateAdded}
+        <div class="contact-name">${esc(dn)}</div>
+        <div class="contact-num">${fmtNum}</div>
+        ${dt ? `<div class="contact-meta">${esc(dt)}</div>` : ''}
         <div class="contact-badges">
-          <span class="badge badge-sheet">${esc(c.sheet)}</span>
-          ${ac === 'Yes' ? '<span class="badge badge-yes">AC ✓</span>' : ac === 'No' ? '<span class="badge badge-no">AC ✗</span>' : ''}
-          ${mp === 'Yes' ? '<span class="badge badge-yes">MP ✓</span>' : mp === 'No' ? '<span class="badge badge-no">MP ✗</span>' : ''}
+          <span class="badge badge-sheet">${esc(c.sheet||'—')}</span>
+          ${ac==='Yes'?'<span class="badge badge-yes">AC ✓</span>':ac==='No'?'<span class="badge badge-no">AC ✗</span>':''}
+          ${mp==='Yes'?'<span class="badge badge-yes">MP ✓</span>':mp==='No'?'<span class="badge badge-no">MP ✗</span>':''}
         </div>
       </div>
     </div>`;
   }).join('');
 }
 
-// ─── VCF Stats ────────────────────────────────────────────
-async function loadVCFStats() {
-  try {
-    const res = await gas('getStats');
-    document.getElementById('vcfTotal').textContent  = res.total;
-    document.getElementById('vcfUnique').textContent = res.unique;
-    document.getElementById('vcfSheets').textContent = res.sheets;
-    _totalCount = res.total;
-    document.getElementById('headerCount').textContent = res.total + ' contacts';
-  } catch (e) { /* silent */ }
-}
+// ═══════════════════════════════════════════════════════
+// DATABASE TAB
+// ═══════════════════════════════════════════════════════
 
-// ─── Generate VCF ─────────────────────────────────────────
-async function generateVCF() {
-  const btn = document.getElementById('btnVCF');
-  btn.disabled = true;
-  btn.innerHTML = '<span class="spin"></span> Generating…';
-  const preview = document.getElementById('vcfPreview');
-  preview.style.display = 'none';
+async function loadDB() {
+  const body = document.getElementById('dbBody');
+  const meta = document.getElementById('dbMeta');
+  body.innerHTML = `<tr><td colspan="7"><div class="list-loader"><div class="spin-lg"></div>Loading database…</div></td></tr>`;
+  meta.textContent = 'Fetching all records…';
+  document.getElementById('btnPDF').disabled = true;
+  setStatus('Loading database…', 'loading');
 
   try {
     const res = await gas('getAllForVCF');
-    const contacts = res.contacts;
+    _allContacts = res.contacts || [];
+    _dbLoaded = true;
+    renderDB(_allContacts);
+    const n = _allContacts.length;
+    meta.textContent = `${n.toLocaleString('en-IN')} contacts loaded`;
+    document.getElementById('dbBadge').textContent = n.toLocaleString('en-IN');
+    document.getElementById('btnPDF').disabled = false;
+    setStatus(`Database loaded — ${n} contacts`, 'success', 4000);
+    if (_totalCount < 0) {
+      _totalCount = n;
+      document.getElementById('headerCount').textContent = n.toLocaleString('en-IN') + ' contacts';
+    }
+  } catch(e) {
+    body.innerHTML = `<tr><td colspan="7"><div class="empty-state"><div class="big">⚠️</div><p>${esc(e.message)}</p><small>Check your GAS URL or network connection</small></div></td></tr>`;
+    meta.textContent = 'Failed to load — click Refresh to retry';
+    setStatus('Database load failed: ' + e.message, 'error', 7000);
+    toast(e.message, 'error', 5000);
+    document.getElementById('btnPDF').disabled = false; // re-enable so user can retry
+  }
+}
+
+function renderDB(contacts) {
+  const body = document.getElementById('dbBody');
+  if (!contacts.length) {
+    body.innerHTML = `<tr><td colspan="7"><div class="empty-state"><div class="big">😶</div><p>No contacts in database</p></div></td></tr>`;
+    return;
+  }
+  body.innerHTML = contacts.map((c, i) => {
+    const num  = c.number || '';
+    const dn   = getDisplayName(c.name, num);
+    const ac   = (c.accountCreated||'').trim();
+    const mp   = (c.monthlyPlan||'').trim();
+    const dt   = c.dateAdded ? timeAgo(c.dateAdded) : '—';
+    const fmtNum = num ? formatNum(num) : '—';
+    return `<tr>
+      <td style="color:var(--muted);font-size:11px">${i+1}</td>
+      <td class="td-name">${dn ? esc(dn) : `<span class="td-auto">New${num.slice(-5)||'?????'}</span>`}</td>
+      <td class="td-num">${fmtNum}</td>
+      <td><span class="badge badge-sheet">${esc(c.sheet||'—')}</span></td>
+      <td>${ac==='Yes'?'<span class="badge badge-yes">✓</span>':ac==='No'?'<span class="badge badge-no">✗</span>':'<span style="color:var(--muted);font-size:11px">—</span>'}</td>
+      <td>${mp==='Yes'?'<span class="badge badge-yes">✓</span>':mp==='No'?'<span class="badge badge-no">✗</span>':'<span style="color:var(--muted);font-size:11px">—</span>'}</td>
+      <td style="font-size:11px;color:var(--muted)">${esc(dt)}</td>
+    </tr>`;
+  }).join('');
+}
+
+// Filter DB live
+function filterDB(q) {
+  const meta = document.getElementById('dbMeta');
+  if (!q.trim()) {
+    renderDB(_allContacts);
+    meta.textContent = `${_allContacts.length.toLocaleString('en-IN')} contacts`;
+    return;
+  }
+  const lq = q.toLowerCase();
+  const normQ = normalizeNumber(q) || '';
+  const filtered = _allContacts.filter(c => {
+    const name = (c.name||'').toLowerCase();
+    const num  = c.number||'';
+    return name.includes(lq) || num.includes(lq) || (normQ && num.includes(normQ));
+  });
+  renderDB(filtered);
+  meta.textContent = `${filtered.length} of ${_allContacts.length.toLocaleString('en-IN')} shown`;
+}
+
+// ═══════════════════════════════════════════════════════
+// PDF EXPORT (client-side via jsPDF)
+// ═══════════════════════════════════════════════════════
+async function exportPDF() {
+  if (!_allContacts.length) { toast('Load database first', 'warn'); return; }
+
+  showOverlay('Generating PDF…', 'Please wait, building table');
+  setStatus('Building PDF…', 'loading');
+  document.getElementById('btnPDF').disabled = true;
+
+  // Dynamically load jsPDF + autoTable
+  await loadScript('https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js');
+  await loadScript('https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.2/jspdf.plugin.autotable.min.js');
+
+  try {
+    const { jsPDF } = window.jspdf;
+    const doc = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' });
+
+    // Header
+    const now = new Date().toLocaleString('en-IN', {day:'2-digit',month:'short',year:'numeric',hour:'2-digit',minute:'2-digit'});
+    doc.setFontSize(16); doc.setFont('helvetica','bold');
+    doc.setTextColor(124,110,245);
+    doc.text('Tiffo Contacts Database', 14, 18);
+    doc.setFontSize(9); doc.setFont('helvetica','normal'); doc.setTextColor(100);
+    doc.text(`Generated: ${now}   |   Total: ${_allContacts.length} contacts`, 14, 25);
+
+    // Table
+    const rows = _allContacts.map((c,i) => {
+      const dn = getDisplayName(c.name, c.number) || `New${c.number.slice(-5)}`;
+      return [
+        i+1,
+        dn,
+        formatNum(c.number),
+        c.sheet||'—',
+        (c.accountCreated||'—'),
+        (c.monthlyPlan||'—'),
+        c.dateAdded ? timeAgo(c.dateAdded) : '—'
+      ];
+    });
+
+    doc.autoTable({
+      startY: 30,
+      head: [['#','Name','Number','Sheet','AC','MP','Added']],
+      body: rows,
+      styles: { fontSize: 8, cellPadding: 2.5, overflow: 'ellipsize' },
+      headStyles: { fillColor: [36,36,50], textColor: [160,160,188], fontStyle: 'bold', fontSize: 7 },
+      alternateRowStyles: { fillColor: [20,20,28] },
+      bodyStyles: { textColor: [220,220,240], fillColor: [16,16,22] },
+      columnStyles: {
+        0: { cellWidth: 10, halign:'center' },
+        1: { cellWidth: 50 },
+        2: { cellWidth: 38, font:'courier' },
+        3: { cellWidth: 22 },
+        4: { cellWidth: 12, halign:'center' },
+        5: { cellWidth: 12, halign:'center' },
+        6: { cellWidth: 24 }
+      },
+      margin: { left: 14, right: 14 },
+      theme: 'grid',
+      didDrawPage: (data) => {
+        doc.setFontSize(7); doc.setTextColor(100);
+        doc.text(`Page ${doc.internal.getCurrentPageInfo().pageNumber}`, doc.internal.pageSize.width - 20, doc.internal.pageSize.height - 8);
+        doc.text('Tiffo Contact Database', 14, doc.internal.pageSize.height - 8);
+      }
+    });
+
+    const fname = `Tiffo_Contacts_${vcfDateStr()}_${_allContacts.length}.pdf`;
+    doc.save(fname);
+    setStatus(`PDF saved — ${_allContacts.length} contacts`, 'success', 4000);
+    toast(`PDF downloaded: ${fname}`, 'success', 4000);
+  } catch(e) {
+    toast('PDF error: ' + e.message, 'error', 5000);
+    setStatus('PDF export failed', 'error', 4000);
+  }
+
+  hideOverlay();
+  document.getElementById('btnPDF').disabled = false;
+}
+
+// Script loader
+function loadScript(src) {
+  if (_loadedScripts[src]) return Promise.resolve();
+  return new Promise((res,rej) => {
+    const s = document.createElement('script');
+    s.src = src; s.onload = () => { _loadedScripts[src] = true; res(); };
+    s.onerror = () => rej(new Error('Failed to load: ' + src));
+    document.head.appendChild(s);
+  });
+}
+
+// ═══════════════════════════════════════════════════════
+// VCF STATS + GENERATE
+// ═══════════════════════════════════════════════════════
+async function loadVCFStats() {
+  setStatus('Loading VCF stats…', 'loading');
+  try {
+    const res = await gas('getStats');
+    const total  = parseInt(res.total,  10) || 0;
+    const unique = parseInt(res.unique, 10) || 0;
+    const sheets = parseInt(res.sheets, 10) || 0;
+    document.getElementById('vcfTotal').textContent  = total;
+    document.getElementById('vcfUnique').textContent = unique;
+    document.getElementById('vcfSheets').textContent = sheets;
+    _totalCount = total;
+    document.getElementById('headerCount').textContent = total.toLocaleString('en-IN') + ' contacts';
+    document.getElementById('dbBadge').textContent = total.toLocaleString('en-IN');
+    setStatus('Ready', 'idle');
+  } catch(e) {
+    setStatus('Stats load failed — ' + e.message, 'error', 5000);
+  }
+}
+
+async function generateVCF() {
+  const btn = document.getElementById('btnVCF');
+  btn.disabled = true;
+  btn.innerHTML = '<div class="btn-spin"></div> Fetching contacts…';
+  document.getElementById('vcfPreview').style.display = 'none';
+  setStatus('Fetching all contacts for VCF…', 'loading');
+
+  try {
+    const res = await gas('getAllForVCF');
+    const contacts = res.contacts || [];
 
     if (!contacts.length) {
-      toast('Koi contact nahi mila', 'warn');
-      btn.disabled = false;
-      btn.innerHTML = '⚡ Generate &amp; Download VCF';
+      toast('No contacts found', 'warn');
+      setStatus('No contacts', 'warn', 3000);
       return;
     }
 
-    // vCard FN value escaping — per RFC 6350
-    function escVcf(s) {
-      return s.replace(/[\r\n\t]/g, ' ')   // newlines/tabs → space (S7 fix)
-               .replace(/\\/g, '\\\\')     // backslash first
-               .replace(/;/g, '\\;')       // semicolon
-               .replace(/,/g, '\\,');      // comma (S5 fix)
-    }
+    btn.innerHTML = '<div class="btn-spin"></div> Building VCF file…';
+    setStatus(`Building VCF for ${contacts.length} contacts…`, 'loading');
 
-    // Build VCF — blank line between each entry (required by spec)
+    // Small async yield so UI can update
+    await new Promise(r => setTimeout(r, 30));
+
     const entries = contacts.map(c => {
-      const fn = c.name ? `Tiffo - ${escVcf(c.name)}` : 'Tiffo';
-      return `BEGIN:VCARD\r\nVERSION:3.0\r\nFN:${fn}\r\nTEL;TYPE=CELL:+91${c.number}\r\nEND:VCARD`;
+      const fn = vcfName(c.name, c.number);
+      return `BEGIN:VCARD\r\nVERSION:3.0\r\nFN:${escVcf(fn)}\r\nN:${escVcf(fn)};;;\r\nTEL;TYPE=CELL:+91${c.number}\r\nEND:VCARD`;
     });
-    const vcfContent = entries.join('\r\n\r\n'); // blank line between entries per vCard spec
 
-    const fileName = `Tiffo ${vcfDateStr()} ${contacts.length}.vcf`;
+    const vcfContent = entries.join('\r\n\r\n');
+    const fileName   = `Tiffo ${vcfDateStr()} ${contacts.length}.vcf`;
     const blob = new Blob([vcfContent], { type: 'text/vcard;charset=utf-8' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url; a.download = fileName; a.click();
-    URL.revokeObjectURL(url);
+    const url  = URL.createObjectURL(blob);
+    const a    = document.createElement('a');
+    a.href = url; a.download = fileName;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    setTimeout(() => URL.revokeObjectURL(url), 5000);
 
     // Update stats
     document.getElementById('vcfTotal').textContent  = contacts.length;
     document.getElementById('vcfUnique').textContent = contacts.length;
 
-    // Preview (strip \r for clean display)
-    const previewEntries = entries.slice(0, 3).map(e => e.replace(/\r\n/g, '\n'));
-    preview.style.display = 'block';
-    preview.textContent = previewEntries.join('\n\n') +
-      (entries.length > 3 ? `\n\n…aur ${entries.length - 3} contacts` : '');
+    // Preview
+    const prev = document.getElementById('vcfPreview');
+    const sample = entries.slice(0,3).map(e => e.replace(/\r\n/g,'\n'));
+    prev.style.display = 'block';
+    prev.textContent = sample.join('\n\n') + (entries.length > 3 ? `\n\n…and ${entries.length-3} more` : '');
 
-    toast(`✅ ${fileName} downloaded!`, 'success', 4000);
-  } catch (e) {
+    setStatus(`VCF ready — ${contacts.length} contacts`, 'success', 5000);
+    toast(`Downloaded: ${fileName}`, 'success', 4000);
+  } catch(e) {
     toast(e.message, 'error', 5000);
+    setStatus('VCF error: ' + e.message, 'error', 6000);
+  } finally {
+    btn.disabled = false;
+    btn.innerHTML = '⚡ Generate &amp; Download VCF';
   }
-
-  btn.disabled = false;
-  btn.innerHTML = '⚡ Generate &amp; Download VCF';
 }
 
-// ─── Enter key = Save (only on Add tab) ──────────────────
+// ═══════════════════════════════════════════════════════
+// KEYBOARD SHORTCUTS
+// ═══════════════════════════════════════════════════════
 document.addEventListener('keydown', e => {
-  if (e.key === 'Enter' &&
-      !e.shiftKey && !e.ctrlKey &&
-      document.getElementById('tab-add').classList.contains('active') &&
-      !document.getElementById('btnSave').disabled) {  // guard: prevent double-save
-    e.preventDefault();
-    saveContact();
+  if (e.key === 'Enter' && !e.shiftKey && !e.ctrlKey && !e.metaKey) {
+    if (document.getElementById('tab-add').classList.contains('active') &&
+        !document.getElementById('btnSave').disabled &&
+        document.activeElement !== document.getElementById('inpName')) {
+      e.preventDefault();
+      saveContact();
+    }
   }
 });
 
-// ─── Boot ─────────────────────────────────────────────────
+// ═══════════════════════════════════════════════════════
+// BOOT
+// ═══════════════════════════════════════════════════════
 (async () => {
-  // Check config
   if (GAS_URL === 'YOUR_GAS_WEB_APP_URL_HERE') {
     document.getElementById('setupBanner').classList.add('show');
     document.getElementById('headerCount').textContent = 'Setup needed';
+    setStatus('GAS_URL not configured', 'error');
     return;
   }
+
+  setStatus('Connecting to database…', 'loading');
   try {
     const res = await gas('getStats');
-    _totalCount = res.total;
-    document.getElementById('headerCount').textContent = res.total + ' contacts';
-    document.getElementById('vcfTotal').textContent  = res.total;
-    document.getElementById('vcfUnique').textContent = res.unique;
-    document.getElementById('vcfSheets').textContent = res.sheets;
-  } catch (e) {
+    _totalCount = parseInt(res.total, 10) || 0;
+    const disp = _totalCount.toLocaleString('en-IN');
+    document.getElementById('headerCount').textContent = disp + ' contacts';
+    document.getElementById('dbBadge').textContent     = disp;
+    document.getElementById('vcfTotal').textContent    = _totalCount;
+    document.getElementById('vcfUnique').textContent   = parseInt(res.unique, 10) || 0;
+    document.getElementById('vcfSheets').textContent   = parseInt(res.sheets, 10) || 0;
+    setStatus(`Connected — ${disp} contacts in database`, 'success', 4000);
+  } catch(e) {
     document.getElementById('headerCount').textContent = 'Offline';
-    toast('GAS connect nahi hua — check URL', 'error', 5000);
+    setStatus('Cannot connect to server — check GAS URL', 'error');
+    toast('Cannot connect to server', 'error', 5000);
   }
 })();
 </script>
