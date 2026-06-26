@@ -776,7 +776,14 @@ function escVcf(s) {
 function timeAgo(dateStr) {
   if (!dateStr) return '';
   try {
-    const d = new Date(dateStr);
+    // Handle dd-MMM-yyyy format from GAS (e.g. "26-Jun-2025") — safe across all browsers/iOS
+    let d;
+    const m = dateStr.match(/^(\d{1,2})-([A-Za-z]{3})-(\d{4})$/);
+    if (m) {
+      d = new Date(`${m[2]} ${m[1]}, ${m[3]}`);
+    } else {
+      d = new Date(dateStr);
+    }
     const diff = Date.now() - d.getTime();
     const mins = Math.floor(diff/60000);
     if (mins < 1) return 'just now';
@@ -1144,13 +1151,13 @@ async function exportPDF() {
       alternateRowStyles: { fillColor: [20,20,28] },
       bodyStyles: { textColor: [220,220,240], fillColor: [16,16,22] },
       columnStyles: {
-        0: { cellWidth: 10, halign:'center' },
-        1: { cellWidth: 50 },
-        2: { cellWidth: 38, font:'courier' },
-        3: { cellWidth: 22 },
-        4: { cellWidth: 12, halign:'center' },
-        5: { cellWidth: 12, halign:'center' },
-        6: { cellWidth: 24 }
+        0: { cellWidth: 8,  halign:'center' },
+        1: { cellWidth: 48 },
+        2: { cellWidth: 36, fontStyle:'normal' },
+        3: { cellWidth: 20 },
+        4: { cellWidth: 14, halign:'center' },
+        5: { cellWidth: 14, halign:'center' },
+        6: { cellWidth: 26 }
       },
       margin: { left: 14, right: 14 },
       theme: 'grid',
